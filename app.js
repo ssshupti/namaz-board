@@ -474,7 +474,7 @@ function renderSky(){
   S.skyKey = key;
   sky.className = "sky sky-" + (late ? "night" : cls);
   sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${esc(c.name)} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
-    <div class="now"><h2>${cur==="sunrise" ? (mk ? "Sunrise" : "Ishraq & Duha") : n}</h2><span class="bn">${bn}</span></div>
+    <div class="now"><h2>${cur==="sunrise" ? (mk ? "Sunrise" : "Ishraq & Duha") : n}</h2><span class="bn">${cur==="sunrise" && mk ? "সূর্যোদয়" : bn}</span></div>
     ${mk ? `<div class="makruh">⛔ Makruh time: don't pray until ${fmtT(mk.until,c.tz)}, ${mk.why}.${mk.asr ? " Today's Asr is still valid if you haven't prayed it." : ""}</div>` : ""}
     ${cur==="fajr" && !mk ? `<div class="sub">🌅 Sunrise ${fmtT(t.sunrise,c.tz)} · Ishraq from ${fmtT(new Date(+t.sunrise + SUNRISE_MIN*MIN),c.tz)}</div>` : ""}
     ${cur==="sunrise" && !mk ? `<div class="sub">☀️ Ishraq and Duha time · Dhuhr at ${fmtT(t.dhuhr,c.tz)}</div>` : ""}
