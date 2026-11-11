@@ -153,11 +153,15 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
       }
       // Isha's waqt runs to Fajr, but delaying it past the middle of the night is disliked, and a 4am ping wakes people.
       // So Isha's reminder goes 30 min before the Islamic midnight (halfway from Maghrib to Fajr) instead.
-      const target = p.k === "isha" ? new Date(+t.maghrib + (+next.fajr - +t.maghrib) / 2) : end;
+      // Asr: aim before the sunset makruh window (last 15 min before Maghrib), not Maghrib itself.
+      const target = p.k === "isha" ? new Date(+t.maghrib + (+next.fajr - +t.maghrib) / 2)
+        : p.k === "asr" ? new Date(+end - 15 * 60e3) : end;
       const remind = new Date(+target - END_LEAD_MS);
       if (m.notify_end && now >= remind && +now - +remind < WINDOW_MS && now < target && !logged(day, p.k)) {
         out.push(p.k === "isha"
           ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Isha before ${fmtT(target, tz)}`, body: "It's best not to delay Isha past midnight. Keep your streak going 🔥" }
+          : p.k === "asr"
+          ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Asr before ${fmtT(target, tz)}`, body: "After that the sun is setting (makruh). Don't lose your streak 🔥" }
           : { day, waqt: p.k, kind: "end", title: `⏳ ${p.en} ends in ${Math.max(1, Math.round((+end - +now) / 60e3))} min`, body: `You haven't logged ${p.en} yet. Don't lose your streak 🔥` });
       }
     }
