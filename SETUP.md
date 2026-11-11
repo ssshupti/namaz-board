@@ -40,6 +40,7 @@ In the steps below, swap in your own values for these placeholders:
    - Region: **West EU (London)**
    - Plan: **Free**.
 3. When it's ready, open **SQL Editor → New query**. Paste all of `supabase/schema.sql` and click **Run**. It should say "Success".
+   Then do the same, one at a time, for each file in `supabase/migrations/` (in number order).
 4. Make a new query, paste this with **your Gmail in lowercase**, and click **Run**. This makes you the admin and lets you join:
 
    ```sql
@@ -123,10 +124,9 @@ Then:
 
 ## 8. Invite your friends
 
-1. Open ⚙️ **Settings → Invite friends**, enter each friend's Gmail and tap **Invite**.
-2. Send them the link and the phone steps from step 7.
+Send them the link. They sign in with Google and tap **Ask to join**. You get a notification, and you approve them under ⚙️ **Settings → Join requests**.
 
-Only invited people can sign in to see the board.
+You can also skip the request by adding their Gmail under **Or invite directly**.
 
 ---
 

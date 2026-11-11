@@ -304,3 +304,16 @@ img{max-width:100%}
 .vispill{margin-top:8px;border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 11px;font-size:12.5px;font-weight:800;color:var(--muted)}
 .vispill.sure{border-color:var(--rose);color:var(--warn);background:color-mix(in srgb,var(--rose) 12%,var(--surface))}
 .sky .sub{font-size:13.5px;font-weight:800;opacity:.9;margin-top:2px}
+.notice.req{background:linear-gradient(120deg,color-mix(in srgb,var(--lav) 22%,var(--surface)),color-mix(in srgb,var(--rose) 18%,var(--surface)))}
+.reqrow{display:flex;flex-direction:column;gap:8px;background:var(--off);border-radius:18px;padding:12px}
+.reqrow .who{display:flex;flex-direction:column;gap:1px;min-width:0}
+.reqrow .who b{font-size:16px}
+.reqrow .who small{color:var(--muted);font-weight:600;overflow-wrap:anywhere}
+.reqrow .who p{margin:4px 0 0;color:var(--ink)!important;font-style:italic}
+.reqrow .primary{padding:8px 18px}.reqrow .ghost{padding:7px 16px}
+.count-badge{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--rose);color:#fff;font-size:13px;vertical-align:middle}
+.iconbtn{position:relative}
+.iconbtn[data-badge]::after{content:attr(data-badge);position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--rose);color:#fff;font-size:11.5px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+.waiting{display:flex;gap:8px;justify-content:center}
+.waiting i{width:10px;height:10px;border-radius:50%;background:var(--rose);animation:bounce 1.2s ease-in-out infinite}
+.waiting i:nth-child(2){animation-delay:.15s;background:var(--lav)}.waiting i:nth-child(3){animation-delay:.3s;background:var(--gold)}

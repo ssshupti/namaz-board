@@ -103,13 +103,13 @@ Deno.serve(async (req) => {
   const db = createClient(env("SUPABASE_URL"), serverKey, { auth: { persistSession: false } });
   const appUrl = env("APP_URL") || "./";
 
-  const send = async (userId: string, title: string, body: string, tag: string) => {
+  const send = async (userId: string, title: string, body: string, tag: string, path = "?view=today") => {
     const { data: subs } = await db.from("push_subscriptions").select("*").eq("user_id", userId);
     let sent = 0;
     for (const s of subs ?? []) {
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify({ title, body, tag, url: appUrl + "?view=today" }), { TTL: 3600, urgency: "high" });
+          JSON.stringify({ title, body, tag, url: appUrl + path }), { TTL: 3600, urgency: "high" });
         sent++;
       } catch (e) {
         // deno-lint-ignore no-explicit-any
@@ -137,9 +137,23 @@ Deno.serve(async (req) => {
   if (req.headers.get("x-cron-secret") !== env("CRON_SECRET") || !env("CRON_SECRET")) return json({ error: "forbidden" }, 403);
 
   const now = new Date();
+
+  // Ping the admin about new join requests (once per request).
+  let reqSent = 0;
+  const { data: newReqs } = await db.from("join_requests").select("user_id,name").eq("notified", false);
+  if (newReqs?.length) {
+    const { data: adminIds } = await db.rpc("admin_user_ids");
+    const names = newReqs.map((r) => r.name).join(", ");
+    for (const id of (adminIds ?? []) as string[]) {
+      reqSent += await send(id, `💌 ${newReqs.length === 1 ? newReqs[0].name + " wants" : newReqs.length + " people want"} to join`,
+        newReqs.length === 1 ? "Tap to approve or decline." : `${names} · tap to review`, "join-requests", "?view=requests");
+    }
+    await db.from("join_requests").update({ notified: true }).in("user_id", newReqs.map((r) => r.user_id));
+  }
+
   const { data: subs } = await db.from("push_subscriptions").select("user_id");
   const ids = [...new Set((subs ?? []).map((s) => s.user_id))];
-  if (!ids.length) return json({ checked: 0, sent: 0 });
+  if (!ids.length) return json({ checked: 0, sent: reqSent });
   const { data: members } = await db.from("members").select("id,name,city,method,madhab,notify_start,notify_end").in("id", ids);
   const since = addDays(now.toISOString().slice(0, 10), -2);
   const { data: logs } = await db.from("logs").select("user_id,day,waqt,code").in("user_id", ids).gte("day", since);
@@ -158,5 +172,5 @@ Deno.serve(async (req) => {
   }
   // Keep the sent log small.
   await db.from("notify_sent").delete().lt("day", addDays(now.toISOString().slice(0, 10), -7));
-  return json({ checked: members?.length ?? 0, sent });
+  return json({ checked: members?.length ?? 0, sent: sent + reqSent });
 });

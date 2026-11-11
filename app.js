@@ -24,7 +24,7 @@ const X = {k:"x",en:"Tahajjud & extra",bn:"তাহাজ্জুদ",chips:[[
 const PTS = {f:10,s:3,w:3,n:2,t:5,i:2,d:2,a:2};
 const H = 3600e3, DAY = 24*H, HISTORY_DAYS = 130;
 
-const S = {sb:null,session:null,myId:null,email:"",invited:false,admin:false,invites:[],
+const S = {sb:null,session:null,myId:null,email:"",invited:false,admin:false,invites:[],requests:[],myRequest:null,lastSync:null,
   members:{},overlay:{},view:"today",dayOff:0,period:"7",open:null,readOnly:false,
   phase:"boot",err:"",pop:"",confirmRm:null};
 const $ = id => document.getElementById(id);
@@ -148,6 +148,7 @@ function rowToMember(r, prev){
     notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
+  if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
   const m = S.members[r.user_id]; if (!m) return;
   (m.days[r.day] ||= {})[r.waqt] = r.code || "";
 }
@@ -159,7 +160,22 @@ async function loadAll(){
   S.members = next;
   const since = addDays(new Date().toISOString().slice(0,10), -HISTORY_DAYS);
   for (let from=0; ; from+=1000){
-    const {data, error} = await S.sb.from("logs").select("user_id,day,waqt,code").gte("day",since).order("day").range(from, from+999);
+    const {data, error} = await S.sb.from("logs").select("user_id,day,waqt,code,updated_at").gte("day",since).order("day").range(from, from+999);
+    if (error) throw error;
+    data.forEach(applyLog);
+    if (data.length < 1000) break;
+  }
+}
+/* Coming back to the app: fetch only what changed since we last looked (keeps data use tiny). */
+async function syncChanges(){
+  if (!S.lastSync){ await loadAll(); return; }
+  const {data:mem, error:e1} = await S.sb.from("members").select("*");
+  if (e1) throw e1;
+  const next = {};
+  for (const r of mem) next[r.id] = rowToMember(r, S.members[r.id]);
+  S.members = next;
+  for (let from=0; ; from+=1000){
+    const {data, error} = await S.sb.from("logs").select("user_id,day,waqt,code,updated_at").gt("updated_at", S.lastSync).order("updated_at").range(from, from+999);
     if (error) throw error;
     data.forEach(applyLog);
     if (data.length < 1000) break;
@@ -178,8 +194,13 @@ function subscribeLive(){
       if (eventType==="DELETE") delete S.members[o.id];
       else S.members[n.id] = rowToMember(n, S.members[n.id]);
       scheduleRender();
-    })
-    .subscribe();
+    });
+  if (S.admin) channel.on("postgres_changes",{event:"*",schema:"public",table:"join_requests"}, ({eventType,new:n,old:o}) => {
+      if (eventType==="DELETE") S.requests = S.requests.filter(r => r.user_id !== o.user_id);
+      else if (!S.requests.some(r => r.user_id === n.user_id)){ S.requests.push(n); toast(`💌 ${n.name} wants to join`); }
+      if (S.view==="settings"){ S.forceForm = true; } scheduleRender();
+    });
+  channel.subscribe();
 }
 let rT = null;
 function scheduleRender(){ clearTimeout(rT); rT = setTimeout(()=>{ if (S.view!=="settings" && S.view!=="alerts") render(); else renderSky(); }, 120); }
@@ -317,7 +338,7 @@ function viewToday(){
   const m = meDoc(), cfg = cfgOf(m), tz = CITIES[cfg.city].tz, now = new Date();
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const canLog = !!m && !S.readOnly;
-  let html = streakCard() + alertsNudge() + friendsStrip();
+  let html = requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div><div class="list">`;
   for (const p of P){
@@ -411,8 +432,9 @@ function viewMe(){
 }
 function viewSettings(){
   const m = meDoc() || {}, cfg = cfgOf(m), isNew = !meDoc();
-  const guessName = S.session?.user?.user_metadata?.given_name || (S.session?.user?.user_metadata?.full_name||"").split(" ")[0] || "";
-  return `<form class="panel" id="setupForm"><h3>${isNew?"Join the board 🌸":"Your settings"}</h3>
+  const guessName = S.myRequest?.name || S.session?.user?.user_metadata?.given_name || (S.session?.user?.user_metadata?.full_name||"").split(" ")[0] || "";
+  const reqTop = S.admin && S.requests.length ? adminPanel().split('<section class="panel" id="manage">')[0] : "";
+  return reqTop + `<form class="panel" id="setupForm"><h3>${isNew?"Join the board 🌸":"Your settings"}</h3>
     <p>Namaz times are worked out for your own city, so each person can be somewhere different.</p>
     <label class="f">Name on the board<input id="f-name" maxlength="24" required value="${esc(m.name||guessName)}" placeholder="e.g. Shupti"></label>
     <div class="grid2">
@@ -428,12 +450,29 @@ function viewSettings(){
     <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud too (public only)</label>
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
-  ${S.admin ? adminPanel() : ""}
+  ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
   <div class="panel"><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button></div></div>`;
 }
+function requestsNudge(){
+  if (!S.admin || !S.requests.length) return "";
+  const n = S.requests.length;
+  return `<div class="notice req"><span>💌 <b>${n} ${n===1?"person wants":"people want"} to join</b> · ${esc(S.requests.slice(0,3).map(r=>r.name).join(", "))}</span><button class="primary" data-act="settings">Review</button></div>`;
+}
+const ago = iso => { const m = Math.round((Date.now()-new Date(iso))/60000); return m<60 ? `${Math.max(1,m)} min ago` : m<1440 ? `${Math.round(m/60)} h ago` : `${Math.round(m/1440)} d ago`; };
 function adminPanel(){
   const ids = Object.keys(S.members);
-  return `<section class="panel" id="manage"><h3>Invite friends 💌</h3><p>Add each friend's Gmail address. Only invited people can join and see the board.</p>
+  const reqs = S.requests.length ? S.requests.map(r => `<div class="reqrow"><div class="who"><b>${esc(r.name)}</b><small>${esc(r.email)} · ${ago(r.created_at)}</small>${r.note?`<p>“${esc(r.note)}”</p>`:""}</div>
+      <div class="btns"><button type="button" class="primary" data-act="approve" data-id="${esc(r.user_id)}">Approve</button><button type="button" class="ghost" data-act="decline" data-id="${esc(r.user_id)}">Decline</button></div></div>`).join("")
+    : `<p class="note">No requests right now. When someone signs in and asks to join, they'll appear here and you'll get a notification.</p>`;
+  return requestsPanel(reqs) + managePanel(ids);
+}
+function requestsPanel(reqs){
+  return `<section class="panel" id="requests"><h3>Join requests 💌${S.requests.length?` <span class="count-badge">${S.requests.length}</span>`:""}</h3>
+    <p>Share the app link. People sign in with Google and ask to join. You approve them here.</p>
+    <div class="mlist">${reqs}</div></section>`;
+}
+function managePanel(ids){
+  return `<section class="panel" id="manage"><h3>Or invite directly</h3><p>Add a Gmail address and that person can join straight away, without asking.</p>
     <form class="invite" id="inviteForm"><input id="f-invite" type="email" required placeholder="friend@gmail.com" autocomplete="off"><button class="primary" type="submit">Invite</button></form>
     <div class="mlist">${S.invites.map(e => `<div class="mrow"><span class="n">${esc(e)}</span><button type="button" data-act="uninvite" data-e="${esc(e)}">Remove</button></div>`).join("") || `<p class="note">No invites yet.</p>`}</div>
     <h3 style="margin-top:6px">Members</h3><p>Removing someone deletes their log for good.</p>
@@ -512,12 +551,23 @@ function viewLogin(){
   return `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
-    <p class="note">Invite only. Ask ${esc(CONF.ownerName||"the board owner")} to add your Gmail address.</p></section>`;
+    <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>`;
 }
 function viewNotInvited(){
-  return `<section class="panel"><h3>You're not on the list yet 🙈</h3>
-    <p>Ask ${esc(CONF.ownerName||"the board owner")} to invite <b>${esc(S.email)}</b>, then tap Check again.</p>
-    <div class="btns"><button class="primary" data-act="recheck">Check again</button><button class="ghost" data-act="signout">Use another account</button></div></section>`;
+  const owner = esc(CONF.ownerName||"the board owner");
+  if (S.myRequest) return `<section class="panel hero-login"><h3>Request sent 💌</h3>
+    <p>${owner} has been asked to let <b>${esc(S.myRequest.name)}</b> in. This page opens the board by itself once you're approved, so you can close it and come back later.</p>
+    <div class="waiting" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="btns"><button class="ghost" data-act="cancelreq">Cancel request</button><button class="ghost" data-act="signout">Use another account</button></div>
+    <p class="note">Signed in as ${esc(S.email)}</p></section>`;
+  const meta = S.session?.user?.user_metadata || {};
+  const guess = meta.given_name || (meta.full_name||"").split(" ")[0] || "";
+  return `<form class="panel" id="reqForm"><h3>Ask to join 🌸</h3>
+    <p>Namaz Board is invite only. Send a request and ${owner} will approve it.</p>
+    <label class="f">Your name<input id="r-name" maxlength="40" required value="${esc(guess)}"></label>
+    <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
+    <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">Use another account</button></div>
+    <p class="note">Signed in as ${esc(S.email)}</p></form>`;
 }
 
 /* ---------- render ---------- */
@@ -527,6 +577,7 @@ function render(){
   document.querySelector(".nav").hidden = !member;
   document.querySelectorAll(".nav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===S.view)));
   $("settingsBtn").hidden = !member; $("bellBtn").hidden = !member;
+  if (S.admin && S.requests.length) $("settingsBtn").dataset.badge = S.requests.length; else delete $("settingsBtn").dataset.badge;
   $("bellBtn").classList.toggle("on", S.pushOn);
   $("hello").textContent = meDoc()?.name ? `Assalamu alaikum, ${meDoc().name} ✨` : "Assalamu alaikum ✨";
   const main = $("main");
@@ -554,6 +605,24 @@ document.addEventListener("click", async e => {
   }
   else if (a==="signout"){ await S.sb.auth.signOut(); location.reload(); }
   else if (a==="recheck"){ await afterAuth(); }
+  else if (a==="cancelreq"){
+    const {error} = await S.sb.from("join_requests").delete().eq("user_id", S.myId);
+    if (error) toast("Couldn't cancel. Try again."); else { S.myRequest = null; render(); }
+  }
+  else if (a==="approve"){
+    b.disabled = true; const r = S.requests.find(x => x.user_id === b.dataset.id);
+    const {error} = await S.sb.rpc("approve_request",{uid:b.dataset.id});
+    if (error){ toast("Couldn't approve: " + error.message); b.disabled = false; return; }
+    S.requests = S.requests.filter(x => x.user_id !== b.dataset.id);
+    if (r && !S.invites.includes(r.email)) S.invites.push(r.email);
+    toast(`Approved ${r?.name || ""} ✨ They're in.`); S.forceForm = true; render();
+  }
+  else if (a==="decline"){
+    b.disabled = true;
+    const {error} = await S.sb.from("join_requests").delete().eq("user_id", b.dataset.id);
+    if (error){ toast("Couldn't decline. Try again."); b.disabled = false; return; }
+    S.requests = S.requests.filter(x => x.user_id !== b.dataset.id); toast("Request declined"); S.forceForm = true; render();
+  }
   else if (a==="settings"){ S.view = "settings"; S.forceForm = true; render(); scrollTo({top:0}); }
   else if (a==="bell"){ S.view = "alerts"; render(); scrollTo({top:0}); }
   else if (a==="pushon") enablePush();
@@ -608,6 +677,14 @@ document.addEventListener("change", async e => {
 });
 document.addEventListener("submit", async e => {
   e.preventDefault();
+  if (e.target.id === "reqForm"){
+    const name = $("r-name").value.trim().slice(0,40), note = $("r-note").value.trim().slice(0,200) || null;
+    if (!name) return;
+    const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    const {data, error} = await S.sb.from("join_requests").insert({user_id:S.myId, email:S.email, name, note}).select().single();
+    if (error){ btn.disabled = false; toast(/duplicate/i.test(error.message) ? "You've already asked. Hang tight!" : "Couldn't send: " + error.message); return; }
+    S.myRequest = data; render(); return;
+  }
   if (e.target.id === "inviteForm"){
     const email = $("f-invite").value.trim().toLowerCase(); if (!email) return;
     const {error} = await S.sb.from("invites").upsert({email});
@@ -646,9 +723,15 @@ async function afterAuthInner(){
   S.myId = session.user.id; S.email = (session.user.email||"").toLowerCase();
   const [inv, adm] = await Promise.all([S.sb.rpc("is_invited"), S.sb.rpc("is_admin")]);
   S.invited = !!inv.data; S.admin = !!adm.data;
-  if (S.admin){ const {data} = await S.sb.from("invites").select("email").order("added_at"); S.invites = (data||[]).map(r=>r.email); }
+  if (S.admin){
+    const [{data}, {data:reqs}] = await Promise.all([S.sb.from("invites").select("email").order("added_at"), S.sb.from("join_requests").select("*").order("created_at")]);
+    S.invites = (data||[]).map(r=>r.email); S.requests = reqs || [];
+  }
   const {data:me} = await S.sb.from("members").select("*").eq("id",S.myId).maybeSingle();
-  if (!me){ S.phase = S.invited ? "join" : "uninvited"; render(); return; }
+  if (!me){
+    if (!S.invited){ const {data:req} = await S.sb.from("join_requests").select("*").eq("user_id",S.myId).maybeSingle(); S.myRequest = req || null; }
+    S.phase = S.invited ? "join" : "uninvited"; render(); return;
+  }
   try { await loadAll(); } catch(e){ S.err = "Couldn't load the board. Check your connection and reload."; S.phase="boot"; render(); return; }
   S.phase = "app"; subscribeLive(); await checkPush(); render();
 }
@@ -656,16 +739,24 @@ async function boot(){
   render();
   setInterval(renderSky, 1000);
   setInterval(() => { if (S.phase==="app" && S.view!=="settings" && S.view!=="alerts") render(); }, 30000);
+  // Waiting for approval: check every 15 s and open the board as soon as it's granted.
+  setInterval(async () => {
+    if (S.phase!=="uninvited" || !S.myRequest || document.visibilityState!=="visible") return;
+    const {data} = await S.sb.rpc("is_invited");
+    if (data){ toast("You're approved! 🎉"); await afterAuth(); }
+  }, 15000);
   if ("serviceWorker" in navigator){
     try { S.swReg = await navigator.serviceWorker.register("./sw.js"); await navigator.serviceWorker.ready; } catch {}
   }
   if (!CONF.supabaseUrl || CONF.supabaseUrl.includes("YOUR-")){ S.phase = "config"; render(); return; }
   S.sb = supabase.createClient(CONF.supabaseUrl, CONF.supabaseKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce"}});
   S.sb.auth.onAuthStateChange((ev) => { if (ev==="SIGNED_IN" && S.phase!=="app" && S.phase!=="join") afterAuth(); });
-  if (new URLSearchParams(location.search).get("view")==="today") history.replaceState(null,"",location.pathname);
+  const qv = new URLSearchParams(location.search).get("view");
+  if (qv){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; }
   await afterAuth();
+  if (S.pendingView && S.admin && S.phase==="app"){ S.view = S.pendingView; S.forceForm = true; render(); }
   document.addEventListener("visibilitychange", async () => {
-    if (document.visibilityState==="visible" && S.phase==="app"){ try { await loadAll(); render(); } catch {} }
+    if (document.visibilityState==="visible" && S.phase==="app"){ try { await syncChanges(); render(); } catch {} }
   });
 }
 boot();
