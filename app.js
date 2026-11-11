@@ -239,18 +239,20 @@ function renderSky(){
   const seq = [["fajr",t.fajr],["sunrise",t.sunrise],["dhuhr",t.dhuhr],["asr",t.asr],["maghrib",t.maghrib],["isha",t.isha],["fajr",nextT.fajr]];
   let i = 0; for (let j=0;j<seq.length-1;j++) if (seq[j][1] <= now) i = j;
   const cur = seq[i][0], endAt = seq[i+1][1], startAt = seq[i][1];
-  const late = cur==="isha" && ymd(now,c.tz) !== today;
+  // Isha lasts until Fajr. The last third of the night (Maghrib→Fajr) is the best time for tahajjud.
+  const lastThird = new Date(+nextT.fajr - (nextT.fajr - t.maghrib)/3);
+  const late = cur==="isha" && now >= lastThird;
   const N = {fajr:["Fajr","ফজর","fajr"],sunrise:["Ishraq & Duha","ইশরাক","morning"],dhuhr:["Dhuhr","যোহর","dhuhr"],asr:["Asr","আসর","asr"],maghrib:["Maghrib","মাগরিব","maghrib"],isha:["Isha","এশা","isha"]};
   const [n, bn, cls] = N[cur];
   const nextName = i+1===6 ? "Fajr" : (N[seq[i+1][0]]?.[0] || "");
   const pct = Math.min(100, (now-startAt)/(endAt-startAt)*100);
   let hijri = ""; try { hijri = new Intl.DateTimeFormat("en-GB-u-ca-islamic-umalqura",{day:"numeric",month:"long",year:"numeric"}).format(now); } catch {}
   const beads = P.map(p => {
-    const done = codeOf(S.myId,today,p.k).includes("f"), isCur = cur===p.k && !late, miss = !done && now >= waqtEnd(cfg,today,p.k);
+    const done = codeOf(S.myId,today,p.k).includes("f"), isCur = cur===p.k, miss = !done && now >= waqtEnd(cfg,today,p.k);
     return `<div class="bead ${done?"done":""} ${isCur?"cur":""} ${miss?"miss":""}"><b>${done?"✓":""}</b><span>${p.en}</span><span class="t">${fmtT(t[p.k],c.tz).replace(/ ?[ap]m/i,"")}</span></div>`;
   }).join("");
   const sky = $("sky");
-  const isFardh = P.some(p=>p.k===cur) && !late;
+  const isFardh = P.some(p=>p.k===cur);
   const fresh = isFardh && now - startAt < 20*60e3 && !codeOf(S.myId,today,cur).includes("f");
   const alert = fresh ? `<div class="alert" role="status"><span>🌸 It's ${n} time!</span>${meDoc() && !S.readOnly ? `<button data-act="tog" data-ds="${today}" data-k="${cur}" data-c="f">I prayed ✓</button>` : ""}</div>` : "";
   const waqtKey = today + cur + late;
@@ -262,7 +264,8 @@ function renderSky(){
   S.skyKey = key;
   sky.className = "sky sky-" + (late ? "night" : cls);
   sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${c.name} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
-    <div class="now"><h2>${late ? "Tahajjud time" : cur==="sunrise" ? "Ishraq & Duha" : n}</h2><span class="bn">${late?"তাহাজ্জুদ":bn}</span></div>
+    <div class="now"><h2>${cur==="sunrise" ? "Ishraq & Duha" : n}</h2><span class="bn">${bn}</span></div>
+    ${cur==="isha" ? `<div class="sub">${late ? "🌙 Last third of the night · best time for tahajjud" : `🌙 Tahajjud's best time starts ${fmtT(lastThird,c.tz)}`}</div>` : ""}
     <div class="count num" role="timer">${countHtml}</div>
     <div class="prog"><i style="width:${pct.toFixed(1)}%"></i></div>
     <div class="beads">${beads}</div>${alert}`;

@@ -303,3 +303,4 @@ img{max-width:100%}
 #setupForm:has(#f-private:checked) #extrasRow{opacity:.45;pointer-events:none}
 .vispill{margin-top:8px;border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 11px;font-size:12.5px;font-weight:800;color:var(--muted)}
 .vispill.sure{border-color:var(--rose);color:var(--warn);background:color-mix(in srgb,var(--rose) 12%,var(--surface))}
+.sky .sub{font-size:13.5px;font-weight:800;opacity:.9;margin-top:2px}
