@@ -49,4 +49,11 @@ create trigger logs_touch before insert or update on public.logs
   for each row execute function public.touch_updated_at();
 create index if not exists logs_updated_at_idx on public.logs (updated_at);
 
-alter publication supabase_realtime add table public.join_requests;
+-- Live updates (safe to re-run).
+do $$ declare t text; begin
+  foreach t in array array['join_requests'] loop
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
