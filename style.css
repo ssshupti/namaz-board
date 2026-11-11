@@ -300,7 +300,6 @@ img{max-width:100%}
 .vis input{accent-color:var(--rose);margin-top:4px;flex:none}
 .vis b{display:block;font-size:15px}
 .vis small{color:var(--muted);font-weight:600;font-size:13px}
-#setupForm:has(#f-private:checked) #extrasRow{opacity:.45;pointer-events:none}
 .vispill{margin-top:8px;border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 11px;font-size:12.5px;font-weight:800;color:var(--muted)}
 .vispill.sure{border-color:var(--rose);color:var(--warn);background:color-mix(in srgb,var(--rose) 12%,var(--surface))}
 .sky .sub{font-size:13.5px;font-weight:800;opacity:.9;margin-top:2px}
@@ -338,3 +337,7 @@ img{max-width:100%}
 .exbtn{border:2px dashed var(--line);background:transparent;border-radius:999px;padding:5px 13px;font-size:13px;font-weight:700;color:var(--muted)}
 .wd.ex i{background:color-mix(in srgb,var(--lav) 22%,var(--surface));font-size:12px;color:var(--muted)}
 .heat i.ex{background:color-mix(in srgb,var(--lav) 35%,var(--off));background-image:repeating-linear-gradient(45deg,transparent 0 2px,rgba(255,255,255,.35) 2px 4px)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+#main{min-width:0;max-width:100%}
+#main > *{min-width:0;max-width:100%}
+.gchips{width:100%}

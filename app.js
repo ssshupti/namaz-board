@@ -75,9 +75,11 @@ function chipStart(cfg, ds, k, c){
 const meDoc = () => S.members[S.myId];
 /* Groups decide who sees whom. gmembers: {groupId: [userIds]} */
 const groupIds = gid => (S.gmembers[gid] || []).filter(id => S.members[id]);
-const coIds = () => [...new Set([S.myId, ...S.groups.flatMap(g => groupIds(g.id))])].filter(id => S.members[id]);
+const isPub = id => S.members[id]?.isPublic !== false;
+const pubIds = () => Object.keys(S.members).filter(isPub);
+const coIds = () => [...new Set([S.myId, ...pubIds(), ...S.groups.flatMap(g => groupIds(g.id))])].filter(id => S.members[id]);
 const fullIds = () => new Set(S.groups.filter(g => g.mode==="full").flatMap(g => groupIds(g.id)));
-const curGroup = () => S.groups.find(g => g.id===S.gid) || S.groups[0] || null;
+const curGroup = () => S.gid==="all" ? null : (S.groups.find(g => g.id===S.gid) || null);
 function codeOf(id, ds, k){
   if (id===S.myId && S.overlay[ds] && k in S.overlay[ds]) return S.overlay[ds][k];
   return S.members[id]?.days?.[ds]?.[k] || "";
@@ -166,7 +168,7 @@ function grade(pct){
 
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
-  return {name:r.name, city:r.city, method:r.method, madhab:r.madhab, showExtras:r.show_extras,
+  return {name:r.name, city:r.city, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
     notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
@@ -182,7 +184,7 @@ async function loadGroups(){
   S.groups = gs || []; S.gmembers = {};
   for (const r of gm || []) (S.gmembers[r.group_id] ||= []).push(r.user_id);
   S.stats = {}; for (const r of st || []) S.stats[r.user_id] = r;
-  if (!S.groups.some(g => g.id===S.gid)) S.gid = S.groups[0]?.id || null;
+  if (S.gid!=="all" && !S.groups.some(g => g.id===S.gid)) S.gid = S.groups[0]?.id || "all";
 }
 async function loadAll(){
   const {data:mem, error:e1} = await S.sb.from("members").select("*");
@@ -362,8 +364,9 @@ function streakCard(){
     <div class="week">${week}</div></section>`;
 }
 function visPill(){
-  const n = S.groups.length;
-  return `<button class="vispill" data-act="tab" data-tab="board" title="Who can see your namaz">${n ? `👥 Shared with ${n} group${n===1?"":"s"}` : "🔒 Private · no groups yet"}</button>`;
+  const pub = isPub(S.myId), sure = S.confirmVis, n = S.groups.length;
+  const label = sure ? (pub ? "Make private? Tap again" : "Make public? Tap again") : (pub ? "🌍 Public" : "🔒 Private");
+  return `<div class="pills"><button class="vispill ${sure?"sure":""}" data-act="vis" title="${pub?"Everyone on Namaz Board sees your streak and grade":"Only your groups see you"}">${label}</button><button class="vispill" data-act="tab" data-tab="board">👥 ${n} group${n===1?"":"s"}</button></div>`;
 }
 function friendsStrip(){
   const ids = coIds(); if (ids.length < 2) return "";
@@ -414,14 +417,13 @@ function excusedRow(ds){
 }
 function viewBoard(){
   const g = curGroup();
-  const chips = `<div class="gchips">${S.groups.map(x => `<button class="gchip" data-act="gpick" data-id="${x.id}" aria-pressed="${g&&x.id===g.id}">${esc(x.name)}</button>`).join("")}
+  const chips = `<div class="gchips"><button class="gchip" data-act="gpick" data-id="all" aria-pressed="${S.gid==="all"}">🌍 Everyone</button>${S.groups.map(x => `<button class="gchip" data-act="gpick" data-id="${x.id}" aria-pressed="${g&&x.id===g.id}">${esc(x.name)}</button>`).join("")}
     <button class="gchip add" data-act="gnew">＋ New</button><button class="gchip add" data-act="gjoin">Join with code</button></div>`;
   if (S.gform) return chips + groupForm();
+  if (S.gid==="all") return chips + everyoneBoard();
   if (!g) return chips + `<div class="panel empty"><h3>Your namaz is private 🔒</h3><p>Nobody can see your log until you're in a group. Create one and share its link, or join a friend's group with their code.</p>
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
-  const rows = ids.map(id => ({id, m:S.members[id], s:summaryFor(id,S.period)}));
-  rows.sort((a,b)=> (b.s.pct??-1)-(a.s.pct??-1) || b.s.streak-a.s.streak || b.s.done-a.s.done);
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
   let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · ${g.mode==="full"?"📖 Full details":"🔥 Streaks only"}</p></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
@@ -429,7 +431,19 @@ function viewBoard(){
   const sq = groupStreak(g.id);
   if (sq !== null) html += `<section class="squad"><div class="flame ${sq?"lit":""}">${flameSvg(true)}<span class="n num">${sq}</span></div>
     <div><h3>Group streak · ${sq} day${sq===1?"":"s"}</h3><p>${sq ? "As long as the shortest streak in the group. Keep each other going!" : "Starts when everyone has a streak going."}</p></div></section>`;
-  html += `<div class="sechead"><h3>${S.period==="7"?"Last 7 days":"This month"}</h3>
+  return html + leaderboard(ids, g.mode==="full");
+}
+function everyoneBoard(){
+  const ids = pubIds();
+  const note = isPub(S.myId) ? "" : `<div class="notice"><span>🔒 <b>You're private</b>, so you're not on this board. Only your groups see you.</span><button class="ghost" data-act="vis">Go public</button></div>`;
+  let html = note + `<section class="ghead"><div><h3>🌍 Everyone</h3><p>${ids.length} public member${ids.length===1?"":"s"} · 🔥 Streaks and grades</p></div></section>`;
+  if (!ids.length) return html + `<div class="panel empty">Nobody is public yet.</div>`;
+  return html + leaderboard(ids, false);
+}
+function leaderboard(ids, full){
+  const rows = ids.map(id => ({id, m:S.members[id], s:summaryFor(id,S.period)}));
+  rows.sort((a,b)=> (b.s.pct??-1)-(a.s.pct??-1) || b.s.streak-a.s.streak || b.s.done-a.s.done);
+  let html = `<div class="sechead"><h3>${S.period==="7"?"Last 7 days":"This month"}</h3>
     <div class="seg"><button data-act="period" data-p="7" aria-pressed="${S.period==="7"}">7 days</button><button data-act="period" data-p="month" aria-pressed="${S.period==="month"}">Month</button></div></div>`;
   if (rows.length >= 3){
     const order = [rows[1],rows[0],rows[2]], cls = ["p2","p1","p3"], place = ["2nd","1st","3rd"];
@@ -438,18 +452,17 @@ function viewBoard(){
   }
   html += `<div class="list">`;
   rows.forEach((r,i) => {
-    const showX = r.id===S.myId || (g.mode==="full" && r.m.showExtras !== false), low = r.s.pct!=null && r.s.pct<70;
-    const canDetail = r.id===S.myId || g.mode==="full";
+    const showX = r.id===S.myId || (full && r.m.showExtras !== false), low = r.s.pct!=null && r.s.pct<70;
+    const canDetail = r.id===S.myId || full;
     html += `<div class="person"><button data-act="open" data-id="${esc(r.id)}" aria-expanded="${S.open===r.id}">
       <span class="rank">${i+1}</span>${avatar(r.id,r.m.name)}
       <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${miniFlame(r.s.streak)}</span>
         <span class="bar"><i style="width:${r.s.pct??0}%"></i></span>
         <span class="pstats num"><span>${r.s.done}/${r.s.due} fardh</span>${showX && !(r.s.ptsMonthOnly) ?`<span>${r.s.pts} pts</span>`:""}${canDetail && r.s.dots?`<span class="dots" title="Today's fardh">${r.s.dots.map(d=>`<i class="${d}"></i>`).join("")}</span>`:""}</span></span>
       <span class="grade ${low?"low":""}">${grade(r.s.pct)}</span></button>
-      ${S.open===r.id ? `<div class="detail">${canDetail ? gradesheet(r.id) : `<p class="note">This group shares streaks and grades only, so daily details stay private.</p>`}</div>` : ""}</div>`;
+      ${S.open===r.id ? `<div class="detail">${canDetail ? gradesheet(r.id) : `<p class="note">Only streaks and grades are shared here, so daily details stay private.</p>`}</div>` : ""}</div>`;
   });
-  html += `</div><p class="note foot">Ranked by fardh prayed out of fardh due. Excused days never count against anyone, and nobody can see them.</p>`;
-  return html;
+  return html + `</div><p class="note foot">Ranked by fardh prayed out of fardh due. Excused days never count against anyone, and nobody can see them.</p>`;
 }
 function groupForm(){
   if (S.gform==="join") return `<form class="panel" id="gJoinForm"><h3>Join a group</h3><p>Ask a friend for their group's 6-letter code, or open the invite link they sent.</p>
@@ -530,6 +543,10 @@ function viewSettings(){
     </div>
     <label class="f">Fajr & Isha method<select id="f-method">${Object.entries(METHODS).map(([k,l])=>`<option value="${k}" ${k===cfg.method?"selected":""}>${l}</option>`).join("")}</select></label>
     <p class="note">In Bangladesh use Karachi. In the UK use Moonsighting Committee.</p>
+    <fieldset class="vis"><legend>Outside my groups</legend>
+      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>Everyone on Namaz Board sees my streak and grade.</small></span></label>
+      <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>Only people in my groups see me.</small></span></label>
+    </fieldset>
     <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud in full-details groups</label>
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
@@ -713,6 +730,15 @@ document.addEventListener("click", async e => {
   else if (a==="pushtest") testPush();
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
   else if (a==="openfr"){ if (b.dataset.id===S.myId) S.view = "me"; else { S.view = "board"; const g = S.groups.find(x => groupIds(x.id).includes(b.dataset.id)); if (g) S.gid = g.id; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
+  else if (a==="vis"){
+    if (!S.confirmVis){ S.confirmVis = true; render(); clearTimeout(S.visT); S.visT = setTimeout(()=>{ S.confirmVis = false; render(); }, 4000); return; }
+    clearTimeout(S.visT); S.confirmVis = false;
+    const to = !isPub(S.myId);
+    const {error} = await S.sb.from("members").update({is_public:to}).eq("id", S.myId);
+    if (error) toast("Couldn't change that. Try again in a moment.");
+    else { meDoc().isPublic = to; toast(to ? "🌍 You're public. Everyone on Namaz Board sees your streak and grade." : "🔒 You're private. Only your groups see you."); }
+    render();
+  }
   else if (a==="excuse"){
     const ds = b.dataset.ds, on = S.excused.has(ds);
     if (!on && S.confirmEx !== ds){ S.confirmEx = ds; render(); clearTimeout(S.exT); S.exT = setTimeout(()=>{ S.confirmEx = null; render(); }, 4000); return; }
@@ -827,7 +853,7 @@ document.addEventListener("submit", async e => {
   }
   if (e.target.id !== "setupForm") return;
   const name = $("f-name").value.trim().slice(0,24); if (!name) return;
-  const prof = {name, city:$("f-city").value, method:$("f-method").value, madhab:$("f-madhab").value, show_extras:$("f-extras").checked};
+  const prof = {name, city:$("f-city").value, method:$("f-method").value, madhab:$("f-madhab").value, show_extras:$("f-extras").checked, is_public:$("f-public").checked};
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
   try {
     if (meDoc()){
