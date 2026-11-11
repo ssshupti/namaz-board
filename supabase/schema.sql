@@ -20,6 +20,7 @@ create table if not exists public.members (
   method text not null default 'Karachi',
   madhab text not null default 'hanafi' check (madhab in ('hanafi','shafi')),
   show_extras boolean not null default true,
+  is_public boolean not null default true,
   notify_start boolean not null default true,
   notify_end boolean not null default true,
   joined date not null default current_date,
@@ -70,6 +71,11 @@ language sql stable security definer set search_path = public as $$
   select exists (select 1 from invites where email = my_email()) or is_admin()
 $$;
 
+create or replace function public.is_public_member(uid uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select is_public from members where id = uid), false)
+$$;
+
 create or replace function public.is_member() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from members where id = auth.uid())
@@ -90,9 +96,9 @@ create policy inv_admin on public.invites for all to authenticated using (is_adm
 drop policy if exists adm_read on public.admins;
 create policy adm_read on public.admins for select to authenticated using (is_admin());
 
--- members: members see everyone; you can create/edit only your own row, only if invited.
+-- members: you see yourself, members see public members, admin sees names; you edit only your own row, only if invited.
 drop policy if exists mem_read on public.members;
-create policy mem_read on public.members for select to authenticated using (is_member() or id = auth.uid());
+create policy mem_read on public.members for select to authenticated using (id = auth.uid() or (is_member() and is_public) or is_admin());
 drop policy if exists mem_insert on public.members;
 create policy mem_insert on public.members for insert to authenticated with check (id = auth.uid() and is_invited());
 drop policy if exists mem_update on public.members;
@@ -100,9 +106,9 @@ create policy mem_update on public.members for update to authenticated using (id
 drop policy if exists mem_delete on public.members;
 create policy mem_delete on public.members for delete to authenticated using (id = auth.uid() or is_admin());
 
--- logs: members see everyone's; you write only your own.
+-- logs: your own, or a public member's; you write only your own.
 drop policy if exists log_read on public.logs;
-create policy log_read on public.logs for select to authenticated using (is_member());
+create policy log_read on public.logs for select to authenticated using (user_id = auth.uid() or (is_member() and is_public_member(user_id)));
 drop policy if exists log_write on public.logs;
 create policy log_write on public.logs for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists log_update on public.logs;

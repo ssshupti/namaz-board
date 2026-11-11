@@ -289,3 +289,11 @@ img{max-width:100%}
 .tog input:checked::after{transform:translateX(18px)}
 .tog small{color:var(--muted);font-weight:600}
 .notice .btns{flex:none}
+.vis{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.vis legend{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;padding:0}
+.vis label{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);border-radius:18px;padding:10px 12px;cursor:pointer;background:var(--surface)}
+.vis label:has(input:checked){border-color:var(--rose);background:color-mix(in srgb,var(--rose) 10%,var(--surface))}
+.vis input{accent-color:var(--rose);margin-top:4px;flex:none}
+.vis b{display:block;font-size:15px}
+.vis small{color:var(--muted);font-weight:600;font-size:13px}
+#setupForm:has(#f-private:checked) #extrasRow{opacity:.45;pointer-events:none}

@@ -72,6 +72,9 @@ function chipStart(cfg, ds, k, c){
 
 /* ---------- data & scoring ---------- */
 const meDoc = () => S.members[S.myId];
+const isPub = id => S.members[id]?.isPublic !== false;
+/* who appears on the leaderboard and squad streak: public members only (you too, if you're public) */
+const boardIds = () => Object.keys(S.members).filter(isPub);
 function codeOf(id, ds, k){
   if (id===S.myId && S.overlay[ds] && k in S.overlay[ds]) return S.overlay[ds][k];
   return S.members[id]?.days?.[ds]?.[k] || "";
@@ -108,8 +111,8 @@ function bestStreak(id, now=new Date()){
   return best;
 }
 function squadStreak(now=new Date()){
-  const ids = Object.keys(S.members); if (ids.length < 2) return null;
-  let n = 0, d = appDay(cfgOf(meDoc() || S.members[ids[0]]), now);
+  const ids = boardIds(); if (ids.length < 2) return null;
+  let n = 0, d = appDay(cfgOf(S.members[ids[0]]), now);
   for (let i=0;i<1500;i++, d=addDays(d,-1)){
     const active = ids.filter(id => dayState(id,d,now).s !== "na");
     if (active.length < 2) break;
@@ -141,7 +144,7 @@ function grade(pct){
 
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
-  return {name:r.name, city:r.city, method:r.method, madhab:r.madhab, showExtras:r.show_extras,
+  return {name:r.name, city:r.city, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
     notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
@@ -290,15 +293,15 @@ function streakCard(){
     <div class="week">${week}</div></section>`;
 }
 function friendsStrip(){
-  const ids = Object.keys(S.members); if (!ids.length) return "";
+  const ids = Object.keys(S.members).filter(id => id===S.myId || isPub(id)); if (!ids.length) return "";
   const now = new Date();
   const rows = ids.map(id => { const m=S.members[id], cfg=cfgOf(m), today=appDay(cfg,now);
     return {id, m, n:P.filter(p=>codeOf(id,today,p.k).includes("f")).length, s:streakOf(id,now)}; })
     .sort((a,b)=> (b.id===S.myId)-(a.id===S.myId) || b.s-a.s || b.n-a.n);
-  return `<section class="friends"><div class="sechead"><h3>Everyone's streaks</h3><p>Ring = today's fardh</p></div><div class="fstrip">${rows.map(r=>`
+  return `<section class="friends"><div class="sechead"><h3>Everyone's streaks</h3><p>${isPub(S.myId)?"Ring = today's fardh":"🔒 You're private: only you see your ring"}</p></div><div class="fstrip">${rows.map(r=>`
     <button class="fr" data-act="openfr" data-id="${esc(r.id)}" aria-label="${esc(r.m.name||"Someone")}: ${r.s}-day streak, ${r.n} of 5 fardh today">
       <span class="ring ${r.n===5?"full":""}" style="--p:${r.n*20}%">${avatar(r.id,r.m.name)}<span class="cnt num">${r.n}/5</span></span>
-      <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}</span>${miniFlame(r.s)}</button>`).join("")}</div></section>`;
+      <span class="fn">${r.id===S.myId?(isPub(r.id)?"You":"You 🔒"):esc(r.m.name||"Someone")}</span>${miniFlame(r.s)}</button>`).join("")}</div></section>`;
 }
 
 /* ---------- views ---------- */
@@ -333,11 +336,12 @@ function viewToday(){
   return html;
 }
 function viewBoard(){
-  const ids = Object.keys(S.members);
-  if (!ids.length) return `<div class="panel empty">No one has joined yet.</div>`;
+  const ids = boardIds();
+  const privNote = isPub(S.myId) ? "" : `<div class="notice"><span>🔒 <b>You're in private mode.</b> Your namaz log is only visible to you, and you're not on the leaderboard.</span><button class="ghost" data-act="settings">Change</button></div>`;
+  if (!ids.length) return privNote + `<div class="panel empty">No one is sharing publicly yet.</div>`;
   const rows = ids.map(id => ({id, m:S.members[id], s:memberSummary(id,S.period)}));
   rows.sort((a,b)=> (b.s.pct??-1)-(a.s.pct??-1) || b.s.streak-a.s.streak || b.s.done-a.s.done);
-  let html = "";
+  let html = privNote;
   const sq = squadStreak();
   if (sq !== null) html += `<section class="squad"><div class="flame ${sq?"lit":""}">${flameSvg(true)}<span class="n num">${sq}</span></div>
     <div><h3>Squad streak · ${sq} day${sq===1?"":"s"}</h3><p>${sq ? "Days in a row where every one of you prayed all 5 fardh." : "Light it together: everyone prays all 5 fardh in the same day."}</p></div></section>`;
@@ -411,7 +415,11 @@ function viewSettings(){
     </div>
     <label class="f">Fajr & Isha method<select id="f-method">${Object.entries(METHODS).map(([k,l])=>`<option value="${k}" ${k===cfg.method?"selected":""}>${l}</option>`).join("")}</select></label>
     <p class="note">In Bangladesh use Karachi. In the UK use Moonsighting Committee.</p>
-    <label class="check"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud on the board</label>
+    <fieldset class="vis"><legend>Who can see my namaz</legend>
+      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌸 Public</b><small>Friends see my streak, logs and grade. I'm on the leaderboard.</small></span></label>
+      <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>Only I see my log. I still get streaks, alerts and my own gradesheet.</small></span></label>
+    </fieldset>
+    <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud too (public only)</label>
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
   ${S.admin ? adminPanel() : ""}
@@ -423,7 +431,7 @@ function adminPanel(){
     <form class="invite" id="inviteForm"><input id="f-invite" type="email" required placeholder="friend@gmail.com" autocomplete="off"><button class="primary" type="submit">Invite</button></form>
     <div class="mlist">${S.invites.map(e => `<div class="mrow"><span class="n">${esc(e)}</span><button type="button" data-act="uninvite" data-e="${esc(e)}">Remove</button></div>`).join("") || `<p class="note">No invites yet.</p>`}</div>
     <h3 style="margin-top:6px">Members</h3><p>Removing someone deletes their log for good.</p>
-    <div class="mlist">${ids.map(id => `<div class="mrow">${avatar(id,S.members[id].name)}<span class="n">${esc(S.members[id].name||"Someone")}${id===S.myId?" (you)":""}</span>
+    <div class="mlist">${ids.map(id => `<div class="mrow">${avatar(id,S.members[id].name)}<span class="n">${esc(S.members[id].name||"Someone")}${S.members[id].isPublic===false?" 🔒":""}${id===S.myId?" (you)":""}</span>
       ${id===S.myId ? "" : `<button type="button" data-act="rm" data-id="${esc(id)}" class="${S.confirmRm===id?"sure":""}">${S.confirmRm===id?"Tap to confirm":"Remove"}</button>`}</div>`).join("")}</div></section>`;
 }
 
@@ -546,7 +554,7 @@ document.addEventListener("click", async e => {
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
-  else if (a==="openfr"){ S.view = "board"; S.open = b.dataset.id; render(); scrollTo({top:0}); }
+  else if (a==="openfr"){ if (b.dataset.id===S.myId && !isPub(S.myId)) S.view = "me"; else { S.view = "board"; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
   else if (a==="uninvite"){
     const {error} = await S.sb.from("invites").delete().eq("email", b.dataset.e);
     if (error) toast("Couldn't remove that invite."); else { S.invites = S.invites.filter(x=>x!==b.dataset.e); S.forceForm = true; render(); }
@@ -593,7 +601,7 @@ document.addEventListener("submit", async e => {
   }
   if (e.target.id !== "setupForm") return;
   const name = $("f-name").value.trim().slice(0,24); if (!name) return;
-  const prof = {name, city:$("f-city").value, method:$("f-method").value, madhab:$("f-madhab").value, show_extras:$("f-extras").checked};
+  const prof = {name, city:$("f-city").value, method:$("f-method").value, madhab:$("f-madhab").value, show_extras:$("f-extras").checked, is_public:$("f-public").checked};
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
   try {
     if (meDoc()){
