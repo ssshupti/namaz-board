@@ -1,22 +1,34 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Privacy · Namaz Board</title><link rel="icon" href="icons/icon-192.png">
-<style>body{font-family:Nunito,system-ui,sans-serif;max-width:640px;margin:0 auto;padding:32px 16px;line-height:1.6;color:#4A3A5E;background:#FFF4F8}h1{color:#E05A86}a{color:#E05A86}</style></head>
+<style>body{font-family:Nunito,system-ui,sans-serif;max-width:640px;margin:0 auto;padding:32px 16px;line-height:1.6;color:#4A3A5E;background:#FFF4F8}h1{color:#E05A86}h2{margin-top:28px}a{color:#E05A86}li{margin:4px 0}</style></head>
 <body>
 <h1>Namaz Board privacy</h1>
-<p>Namaz Board is a private, invite-only app for a small group of friends to log their daily namaz.</p>
-<h2>What we store</h2>
+<p>Namaz Board is a small, approval-only app for friends to log their daily namaz. Nothing is sold, shared with advertisers, or used for anything else.</p>
+
+<h2>What's stored</h2>
 <ul>
-<li>Your Google account email and a user ID, used only to sign you in and check you were invited.</li>
-<li>The display name, city and prayer-time settings you choose.</li>
-<li>Which namaz you log each day.</li>
-<li>If you turn on alerts, a push subscription so your phone can receive notifications.</li>
+<li>Your Google email and a user ID, to sign you in and check you were approved.</li>
+<li>The name you choose, your city or rounded location, and your prayer-time settings.</li>
+<li>Which namaz you log each day, and your streak numbers.</li>
+<li>Days you mark as excused.</li>
+<li>If you turn on alerts, a push subscription so your phone can receive them.</li>
 </ul>
-<h2>Who can see it</h2>
-<p>Other invited members of the board can see your name, streaks and logs. If you turn off "show my extras", your sunnah, nafl and tahajjud are hidden from them. Nothing is sold, shared with advertisers, or used for anything else.</p>
+
+<h2>Who sees what</h2>
+<ul>
+<li><b>Public</b> (🌍): everyone on Namaz Board sees your name, streak, grade and points on the Everyone board. Daily details are not shown there.</li>
+<li><b>Private</b> (🔒): you're hidden from the Everyone board.</li>
+<li><b>Groups</b>: people in your groups see your name, streak, grade and points. In <i>full details</i> groups they also see which namaz you logged each day.</li>
+<li><b>Excused days</b> are visible only to you. Nobody else, including the app's owner, can see them. Others only see your final streak numbers.</li>
+<li><b>Location</b>: if you tap "Use my location", only a position rounded to about 10 km is saved, together with a label such as "Near London". It's never shown on anyone's screen.</li>
+</ul>
+
 <h2>Where it lives</h2>
-<p>Data is stored in Supabase (database and sign-in). The app is hosted on GitHub Pages.</p>
+<p>Data is stored with Supabase (database and sign-in). The app is hosted on GitHub Pages. Push notifications go through your phone's own notification service (Apple, Google or Mozilla). The owner keeps an encrypted weekly backup, which never includes excused days.</p>
+
 <h2>Deleting your data</h2>
-<p>Ask the board owner to remove you, and your account and logs are deleted.</p>
+<p>In the app, open ⚙️ Settings and tap <b>Delete my account</b>. Your profile, logs, streaks, excused days and alerts are deleted straight away. Copies in old backups expire within 90 days.</p>
+
 <p><a href="./">Back to Namaz Board</a></p>
 </body></html>

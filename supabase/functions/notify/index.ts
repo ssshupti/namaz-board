@@ -151,10 +151,14 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
         out.push({ day, waqt: p.k, kind: "start", title: `🌸 It's ${p.en} time · ${p.bn}`,
           body: `${p.en} ends at ${fmtT(end, tz)}. Pray, then tap to log it.` });
       }
-      const remind = new Date(+end - END_LEAD_MS);
-      if (m.notify_end && now >= remind && +now - +remind < WINDOW_MS && now < end && !logged(day, p.k)) {
-        out.push({ day, waqt: p.k, kind: "end", title: `⏳ ${p.en} ends in ${Math.max(1, Math.round((+end - +now) / 60e3))} min`,
-          body: `You haven't logged ${p.en} yet. Don't lose your streak 🔥` });
+      // Isha's waqt runs to Fajr, but delaying it past the middle of the night is disliked, and a 4am ping wakes people.
+      // So Isha's reminder goes 30 min before the Islamic midnight (halfway from Maghrib to Fajr) instead.
+      const target = p.k === "isha" ? new Date(+t.maghrib + (+next.fajr - +t.maghrib) / 2) : end;
+      const remind = new Date(+target - END_LEAD_MS);
+      if (m.notify_end && now >= remind && +now - +remind < WINDOW_MS && now < target && !logged(day, p.k)) {
+        out.push(p.k === "isha"
+          ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Isha before ${fmtT(target, tz)}`, body: "It's best not to delay Isha past midnight. Keep your streak going 🔥" }
+          : { day, waqt: p.k, kind: "end", title: `⏳ ${p.en} ends in ${Math.max(1, Math.round((+end - +now) / 60e3))} min`, body: `You haven't logged ${p.en} yet. Don't lose your streak 🔥` });
       }
     }
   }

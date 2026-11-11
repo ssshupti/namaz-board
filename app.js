@@ -402,6 +402,7 @@ async function flush(){
     rows.forEach(applyLog); pushMyStats();
   } catch(e){
     if (!navigator.onLine){ for (const d in batch) pending[d] = {...batch[d], ...(pending[d]||{})}; toast("You're offline. Will save when you're back."); }
+    else if (/no longer be changed/i.test(e?.message||"")) toast("That day is locked now.");
     else toast("Couldn't save that. Check your connection and try again.");
   } finally {
     writing = false;
@@ -471,7 +472,7 @@ function renderSky(){
   if (key === S.skyKey){ sky.querySelector(".count").innerHTML = countHtml; sky.querySelector(".prog i").style.width = pct.toFixed(1)+"%"; return; }
   S.skyKey = key;
   sky.className = "sky sky-" + (late ? "night" : cls);
-  sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${c.name} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
+  sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${esc(c.name)} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
     <div class="now"><h2>${cur==="sunrise" ? (mk ? "Sunrise" : "Ishraq & Duha") : n}</h2><span class="bn">${bn}</span></div>
     ${mk ? `<div class="makruh">⛔ Makruh time: don't pray until ${fmtT(mk.until,c.tz)}, ${mk.why}.${mk.asr ? " Today's Asr is still valid if you haven't prayed it." : ""}</div>` : ""}
     ${cur==="isha" ? `<div class="sub">${late ? "🌙 Last third of the night · best time for tahajjud" : `🌙 Tahajjud's best time starts ${fmtT(lastThird,c.tz)}`}</div>` : ""}
@@ -707,7 +708,7 @@ function viewSettings(){
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
-  <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button></div><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button></div></div>${watermark()}`;
+  <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button><a class="ghost" href="privacy.html" target="_blank" rel="noopener">Privacy</a></div><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button>${meDoc() ? `<button class="ghost danger ${S.confirmDelMe?"sure":""}" type="button" data-act="deleteme">${S.confirmDelMe?"Tap again: delete everything":"Delete my account"}</button>` : ""}</div></div>${watermark()}`;
 }
 function requestsNudge(){
   if (!S.admin || !S.requests.length) return "";
@@ -928,6 +929,16 @@ document.addEventListener("click", async e => {
       $("geoNote").textContent = `Using ${place} (rounded to about 10 km). Tap Save.`;
     }, () => { $("geoNote").textContent = "Location wasn't shared. Pick your city from the list instead."; }, {enableHighAccuracy:false, timeout:15000, maximumAge:600000});
   }
+  else if (a==="deleteme"){
+    if (!S.confirmDelMe){ S.confirmDelMe = true; S.forceForm = true; render(); clearTimeout(S.dmT); S.dmT = setTimeout(()=>{ S.confirmDelMe = false; S.forceForm = true; render(); }, 5000); return; }
+    S.confirmDelMe = false; b.disabled = true;
+    try { const sub = await S.swReg?.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch {}
+    const {error} = await S.sb.from("members").delete().eq("id", S.myId);
+    if (error){ toast("Couldn't delete your account. Try again."); b.disabled = false; return; }
+    await S.sb.from("join_requests").delete().eq("user_id", S.myId);
+    try { localStorage.clear(); } catch {}
+    await S.sb.auth.signOut(); toast("Your account and logs were deleted."); setTimeout(() => location.reload(), 1200);
+  }
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
   else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
@@ -994,8 +1005,9 @@ document.addEventListener("click", async e => {
     const id = b.dataset.id;
     if (S.confirmRm !== id){ S.confirmRm = id; S.forceForm = true; render(); return; }
     S.confirmRm = null; b.disabled = true;
-    const {error} = await S.sb.from("members").delete().eq("id", id);
-    if (error) toast("Couldn't remove them. Try again in a moment."); else { delete S.members[id]; toast("Removed"); }
+    let {error} = await S.sb.rpc("admin_remove_member", {uid:id});
+    if (error && /function|schema cache/i.test(error.message||"")) ({error} = await S.sb.from("members").delete().eq("id", id)); // before update 008
+    if (error) toast("Couldn't remove them. Try again in a moment."); else { delete S.members[id]; toast("Removed. Their invite was cancelled too."); }
     S.forceForm = true; render();
   }
   else if (a==="day"){ S.dayOff = Number(b.dataset.d); render(); }
