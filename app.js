@@ -34,6 +34,7 @@ const flameSvg = (lit) => lit
   ? `<svg viewBox="0 0 64 76" aria-hidden="true"><use href="#flm" fill="url(#gF)"/><ellipse cx="25" cy="47" rx="3" ry="3.6" fill="#5A2440"/><ellipse cx="39" cy="47" rx="3" ry="3.6" fill="#5A2440"/><circle cx="26" cy="45.8" r="1" fill="#fff"/><circle cx="40" cy="45.8" r="1" fill="#fff"/><path d="M28.5 53q3.5 3.5 7 0" stroke="#5A2440" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="19" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/><circle cx="45" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/></svg>`
   : `<svg viewBox="0 0 64 76" aria-hidden="true"><use href="#flm" fill="var(--off)" stroke="var(--line)" stroke-width="2.5"/><path d="M21 48q4 3 8 0M35 48q4 3 8 0" stroke="var(--muted)" stroke-width="2.2" fill="none" stroke-linecap="round"/><text x="44" y="30" font-size="10" font-weight="800" fill="var(--muted)" font-family="sans-serif">z</text></svg>`;
 const miniFlame = (n, lit=true) => `<span class="mini ${lit&&n?"":"off"}"><svg viewBox="0 0 64 76"><use href="#flm" fill="${lit&&n?"url(#gF)":"var(--line)"}"/></svg>${n}</span>`;
+const watermark = () => `<p class="wm">made with <span aria-hidden="true">🌸</span> by ${esc(CONF.ownerName || "Shupti")}</p>`;
 const hue = id => { let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))%360; return h; };
 const avatar = (id,name,crown) => `<span class="av" style="background:linear-gradient(140deg,hsl(${hue(id)} 85% 82%),hsl(${(hue(id)+50)%360} 80% 76%))">${crown?'<span class="crown" aria-hidden="true">👑</span>':""}${esc((name||"?").trim().charAt(0).toUpperCase())}</span>`;
 
@@ -450,7 +451,7 @@ function viewToday(){
     <div class="nm"><h3>${X.en}</h3><span class="bn">${X.bn}</span></div>
     <div class="range num">Last third of the night from ${fmtT(new Date(+nf-(nf-t.maghrib)/3),tz)}</div>
     <div class="chips">${X.chips.map(([c,l])=>{ const st=chipStart(cfg,ds,"x",c); const off=!canLog||now<st||now>=new Date(+st+DAY); return `<button class="chip ${xc.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="x" data-c="${c}" aria-pressed="${xc.includes(c)}" ${off?"disabled":""}>${l}</button>`; }).join("")}</div></article>`;
-  html += `</div><p class="note foot">Each namaz can be logged for 24 hours after its waqt begins. Only fardh counts toward your streak.</p>`;
+  html += `</div><p class="note foot">Each namaz can be logged for 24 hours after its waqt begins. Only fardh counts toward your streak.</p>` + watermark();
   return html;
 }
 function excusedRow(ds){
@@ -595,7 +596,7 @@ function viewSettings(){
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
-  <div class="panel"><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button></div></div>`;
+  <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button></div><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button></div></div>${watermark()}`;
 }
 function requestsNudge(){
   if (!S.admin || !S.requests.length) return "";
@@ -695,7 +696,7 @@ function viewLogin(){
   return `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
-    <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>`;
+    <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
 }
 function viewNotInvited(){
   const owner = esc(CONF.ownerName||"the board owner");
@@ -712,6 +713,37 @@ function viewNotInvited(){
     <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
     <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">Use another account</button></div>
     <p class="note">Signed in as ${esc(S.email)}</p></form>`;
+}
+
+/* ---------- welcome tour ---------- */
+const heartIcon = (k, c) => `<svg viewBox="0 0 24 22" width="34" height="31" aria-hidden="true"><path d="M12 21s-8.5-5.3-10.6-10.1C-.2 6.6 2.4 1.5 7 1.5c2.3 0 4 1.3 5 3 1-1.7 2.7-3 5-3 4.6 0 7.2 5.1 5.6 9.4C20.5 15.7 12 21 12 21z" fill="${c}"/><text x="12" y="13.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" font-family="sans-serif">${k}</text></svg>`;
+function tourSteps(){
+  const name = esc(meDoc()?.name || "friend");
+  return [
+    {art:`<div class="tart moon">🌙</div>`, h:`Assalamu alaikum, ${name} 🌸`,
+     p:"Namaz Board helps you and your friends keep your five daily namaz, together. Here's how it works in 30 seconds."},
+    {art:`<div class="tart"><span class="fard demo"><span class="box"></span>Fardh<small>4</small></span><span class="chip demo">Sunnah<small>4</small></span></div>`, h:"Log each namaz",
+     p:"After you pray, tap the pink <b>Fardh</b> button. Tap Sunnah, Nafl or Witr too if you prayed them. You have <b>24 hours</b> to log each namaz, so a forgotten tap is fine."},
+    {art:`<div class="tart"><span class="tflame">${flameSvg(true)}</span>${[1,2,3].map(k=>heartIcon(k, heartColors[k-1])).join("")}</div>`, h:"Keep your streaks",
+     p:"🔥 grows each day you pray <b>all 5</b> fardh. Hearts count days with <b>at least 1, 2, 3…</b> fardh, so every step counts. Travelling, ill or can't pray? Tap <b>Excuse this day</b>: your streak pauses, and <b>only you</b> can see it."},
+    {art:`<div class="tart">${["🌍","👥","🔒"].map(e=>`<span class="temo">${e}</span>`).join("")}</div>`, h:"Friends & groups",
+     p:"<b>🌍 Public</b> puts your streak and grade on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share with just the people you choose: <i>streaks only</i> or <i>full details</i>. Invite friends from the Board tab."}
+  ];
+}
+function renderTour(){
+  let el = $("tour");
+  if (S.tour == null){ if (el) el.remove(); return; }
+  const steps = tourSteps(), i = S.tour, st = steps[i], last = i === steps.length-1;
+  if (!el){ el = document.createElement("div"); el.id = "tour"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
+  el.innerHTML = `<div class="tcard">${st.art}<h3>${st.h}</h3><p>${st.p}</p>
+    <div class="tdots">${steps.map((_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</div>
+    <div class="btns">${last ? `${pushSupported || isIOS ? `<button class="primary" data-act="tourdone" data-then="alerts">Turn on alerts 🔔</button>` : ""}<button class="${pushSupported || isIOS ? "ghost" : "primary"}" data-act="tourdone">Start</button>`
+      : `<button class="primary" data-act="tournext">Next</button><button class="ghost" data-act="tourdone">Skip</button>`}</div></div>`;
+  el.querySelector(".primary")?.focus();
+}
+function maybeTour(){
+  let seen = false; try { seen = localStorage.getItem("nb-tour-v1") === "1"; } catch {}
+  if (!seen && meDoc()){ S.tour = 0; renderTour(); }
 }
 
 /* ---------- render ---------- */
@@ -772,6 +804,9 @@ document.addEventListener("click", async e => {
   else if (a==="pushon") enablePush();
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
+  else if (a==="tour"){ S.tour = 0; renderTour(); }
+  else if (a==="tournext"){ S.tour++; renderTour(); }
+  else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
   else if (a==="openfr"){ if (b.dataset.id===S.myId) S.view = "me"; else { S.view = "board"; const g = S.groups.find(x => groupIds(x.id).includes(b.dataset.id)); if (g) S.gid = g.id; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
   else if (a==="vis"){
@@ -857,6 +892,7 @@ document.addEventListener("click", async e => {
     }
   }
 });
+document.addEventListener("keydown", e => { if (e.key==="Escape" && S.tour!=null){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} } });
 document.addEventListener("change", async e => {
   if (e.target.dataset.act !== "ntoggle") return;
   const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked};
@@ -907,7 +943,7 @@ document.addEventListener("submit", async e => {
       const joined = appDay(cfgOf(prof));
       const {data, error} = await S.sb.from("members").insert({id:S.myId, ...prof, joined}).select().single(); if (error) throw error;
       await loadAll(); S.members[S.myId] ||= rowToMember(data); subscribeLive(); checkPush();
-      S.phase = "app"; celebrate(); pushMyStats();
+      S.phase = "app"; celebrate(); pushMyStats(); setTimeout(maybeTour, 1200);
       let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
       if (code) setTimeout(() => joinWithCode(code), 600);
     }
@@ -948,7 +984,7 @@ async function afterAuthInner(){
     S.phase = S.invited ? "join" : "uninvited"; render(); return;
   }
   try { await loadAll(); } catch(e){ S.err = "Couldn't load the board. Check your connection and reload."; S.phase="boot"; render(); return; }
-  S.phase = "app"; subscribeLive(); await checkPush(); render(); pushMyStats();
+  S.phase = "app"; subscribeLive(); await checkPush(); render(); pushMyStats(); maybeTour();
   let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
   if (code) await joinWithCode(code);
 }

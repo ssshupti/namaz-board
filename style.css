@@ -353,3 +353,24 @@ img{max-width:100%}
 .hcell:not(.on) b{color:var(--muted)}
 .mini.heart{color:var(--warn)}
 .mini.heart svg{width:16px;height:15px}
+/* watermark */
+.wm{text-align:center;margin:6px 0 0;font-size:12px;font-weight:700;color:var(--muted);opacity:.75;letter-spacing:.02em}
+/* welcome tour */
+.tour{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--ink) 45%,transparent);backdrop-filter:blur(4px);animation:tfade .25s ease}
+@keyframes tfade{from{opacity:0}}
+.tcard{width:min(400px,100%);background:var(--surface);border-radius:30px;padding:24px 20px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 4px 0 var(--line),0 30px 60px -20px rgba(0,0,0,.45);animation:tpop .35s cubic-bezier(.3,1.5,.5,1)}
+@keyframes tpop{from{transform:scale(.92) translateY(10px)}}
+.tcard h3{font-family:var(--display);font-size:24px;font-weight:800;line-height:1.1}
+.tcard p{margin:0;color:var(--muted);font-weight:600;line-height:1.5}
+.tcard p b{color:var(--ink)}
+.tcard .btns{justify-content:center;margin-top:4px}
+.tart{min-height:84px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.tart.moon{font-size:58px}
+.tflame{position:relative;width:62px;height:72px;display:inline-block}
+.tflame svg{width:100%;height:100%}
+.temo{font-size:40px}
+.fard.demo,.chip.demo{pointer-events:none}
+.tdots{display:flex;gap:6px}
+.tdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.tdots i.on{background:var(--rose);width:20px;border-radius:99px}
+@media (prefers-reduced-motion:reduce){.tour,.tcard{animation:none}}
