@@ -377,3 +377,4 @@ img{max-width:100%}
 .locrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .locrow .ghost{padding:8px 14px}
 .locrow .note{flex:1 1 180px}
+.sky .makruh{margin-top:6px;background:rgba(255,255,255,.88);color:#B4234F;border-radius:14px;padding:6px 10px;font-size:13px;font-weight:800;line-height:1.35}

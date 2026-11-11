@@ -161,7 +161,7 @@ function waqtEnd(cfg, ds, k){ return ENDS[k] ? times(cfg,ds)[ENDS[k]] : times(cf
 function chipStart(cfg, ds, k, c){
   const t = times(cfg,ds);
   if (k!=="x") return t[k];
-  return c==="t" ? t.isha : c==="a" ? t.maghrib : t.sunrise;
+  return c==="t" ? t.isha : c==="a" ? t.maghrib : new Date(+t.sunrise + SUNRISE_MIN*60e3);
 }
 
 /* ---------- data & scoring ---------- */
@@ -429,6 +429,15 @@ function celebrate(){
   })(t0);
 }
 
+/* ---------- makruh (forbidden) times: approximate windows ---------- */
+const MIN = 60e3, SUNRISE_MIN = 15, ZAWAL_MIN = 10, SUNSET_MIN = 15;
+function makruhNow(t, now){
+  if (now >= t.sunrise && now < new Date(+t.sunrise + SUNRISE_MIN*MIN)) return {why:"the sun is rising", until:new Date(+t.sunrise + SUNRISE_MIN*MIN)};
+  if (now >= new Date(+t.dhuhr - ZAWAL_MIN*MIN) && now < t.dhuhr) return {why:"the sun is at its highest (zawal)", until:t.dhuhr};
+  if (now >= new Date(+t.maghrib - SUNSET_MIN*MIN) && now < t.maghrib) return {why:"the sun is setting", until:t.maghrib, asr:true};
+  return null;
+}
+
 /* ---------- sky hero ---------- */
 function renderSky(){
   const m = meDoc(), cfg = cfgOf(m), c = loc(cfg), now = new Date();
@@ -452,7 +461,8 @@ function renderSky(){
   const isFardh = P.some(p=>p.k===cur);
   const fresh = isFardh && now - startAt < 20*60e3 && !codeOf(S.myId,today,cur).includes("f");
   const alert = fresh ? `<div class="alert" role="status"><span>🌸 It's ${n} time!</span>${meDoc() && !S.readOnly ? `<button data-act="tog" data-ds="${today}" data-k="${cur}" data-c="f">I prayed ✓</button>` : ""}</div>` : "";
-  const waqtKey = today + cur + late;
+  const mk = makruhNow(t, now);
+  const waqtKey = today + cur + late + (mk ? "mk" : "");
   // Only announce a new waqt when time moves on, not when the city changes (e.g. after signing in).
   if (S.lastWaqt && S.lastWaqt !== waqtKey && S.lastPlace === c.name && isFardh) toast(`🌸 It's ${n} time! Go pray, then tap Fardh.`);
   S.lastWaqt = waqtKey; S.lastPlace = c.name;
@@ -462,7 +472,8 @@ function renderSky(){
   S.skyKey = key;
   sky.className = "sky sky-" + (late ? "night" : cls);
   sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${c.name} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
-    <div class="now"><h2>${cur==="sunrise" ? "Ishraq & Duha" : n}</h2><span class="bn">${bn}</span></div>
+    <div class="now"><h2>${cur==="sunrise" ? (mk ? "Sunrise" : "Ishraq & Duha") : n}</h2><span class="bn">${bn}</span></div>
+    ${mk ? `<div class="makruh">⛔ Makruh time: don't pray until ${fmtT(mk.until,c.tz)}, ${mk.why}.${mk.asr ? " Today's Asr is still valid if you haven't prayed it." : ""}</div>` : ""}
     ${cur==="isha" ? `<div class="sub">${late ? "🌙 Last third of the night · best time for tahajjud" : `🌙 Tahajjud's best time starts ${fmtT(lastThird,c.tz)}`}</div>` : ""}
     <div class="count num" role="timer">${countHtml}</div>
     <div class="prog"><i style="width:${pct.toFixed(1)}%"></i></div>
