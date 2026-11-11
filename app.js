@@ -618,7 +618,7 @@ function groupForm(){
     <label class="f">Group code<input id="g-code" maxlength="6" required autocomplete="off" placeholder="e.g. K7Q2ZP" style="text-transform:uppercase;letter-spacing:.2em"></label>
     <div class="btns"><button class="primary" type="submit">Join</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
   return `<form class="panel" id="gNewForm"><h3>New group 🌸</h3>
-    <label class="f">Name<input id="g-name" maxlength="30" required placeholder="Uni girls, Family, Cousins…"></label>
+    <label class="f">Name<input id="g-name" maxlength="30" required placeholder="Uni friends, Family, Cousins…"></label>
     <fieldset class="vis"><legend>What members can see</legend>
       <label><input type="radio" name="g-mode" id="g-summary" value="summary" checked><span><b>🔥 Streaks only</b><small>Streaks, grades and points. No daily details. Best for mixed or bigger groups.</small></span></label>
       <label><input type="radio" name="g-mode" id="g-full" value="full"><span><b>📖 Full details</b><small>Also today's rings, gradesheets and calendars. Best for close friends.</small></span></label>
