@@ -366,7 +366,7 @@ function streakCard(){
 function visPill(){
   const pub = isPub(S.myId), sure = S.confirmVis, n = S.groups.length;
   const label = sure ? (pub ? "Make private? Tap again" : "Make public? Tap again") : (pub ? "🌍 Public" : "🔒 Private");
-  return `<div class="pills"><button class="vispill ${sure?"sure":""}" data-act="vis" title="${pub?"Everyone on Namaz Board sees your streak and grade":"Only your groups see you"}">${label}</button><button class="vispill" data-act="tab" data-tab="board">👥 ${n} group${n===1?"":"s"}</button></div>`;
+  return `<div class="pills"><button class="vispill ${sure?"sure":""}" data-act="vis" title="${pub?"You're on the Everyone board":"Hidden from the Everyone board. Your groups still see you"}">${label}</button><button class="vispill" data-act="tab" data-tab="board">👥 ${n} group${n===1?"":"s"}</button></div>`;
 }
 function friendsStrip(){
   const ids = coIds(); if (ids.length < 2) return "";
@@ -435,7 +435,7 @@ function viewBoard(){
 }
 function everyoneBoard(){
   const ids = pubIds();
-  const note = isPub(S.myId) ? "" : `<div class="notice"><span>🔒 <b>You're private</b>, so you're not on this board. Only your groups see you.</span><button class="ghost" data-act="vis">Go public</button></div>`;
+  const note = isPub(S.myId) ? "" : `<div class="notice"><span>🔒 <b>You're private</b>, so you're hidden from this board. Your groups still see your record.</span><button class="ghost" data-act="vis">Go public</button></div>`;
   let html = note + `<section class="ghead"><div><h3>🌍 Everyone</h3><p>${ids.length} public member${ids.length===1?"":"s"} · 🔥 Streaks and grades</p></div></section>`;
   if (!ids.length) return html + `<div class="panel empty">Nobody is public yet.</div>`;
   return html + leaderboard(ids, false);
@@ -543,9 +543,9 @@ function viewSettings(){
     </div>
     <label class="f">Fajr & Isha method<select id="f-method">${Object.entries(METHODS).map(([k,l])=>`<option value="${k}" ${k===cfg.method?"selected":""}>${l}</option>`).join("")}</select></label>
     <p class="note">In Bangladesh use Karachi. In the UK use Moonsighting Committee.</p>
-    <fieldset class="vis"><legend>Outside my groups</legend>
-      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>Everyone on Namaz Board sees my streak and grade.</small></span></label>
-      <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>Only people in my groups see me.</small></span></label>
+    <fieldset class="vis"><legend>Everyone board</legend>
+      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak and grade. My groups see me too.</small></span></label>
+      <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>I'm hidden from the Everyone board. My groups still see my record.</small></span></label>
     </fieldset>
     <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud in full-details groups</label>
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
@@ -736,7 +736,7 @@ document.addEventListener("click", async e => {
     const to = !isPub(S.myId);
     const {error} = await S.sb.from("members").update({is_public:to}).eq("id", S.myId);
     if (error) toast("Couldn't change that. Try again in a moment.");
-    else { meDoc().isPublic = to; toast(to ? "🌍 You're public. Everyone on Namaz Board sees your streak and grade." : "🔒 You're private. Only your groups see you."); }
+    else { meDoc().isPublic = to; toast(to ? "🌍 You're public. You're on the Everyone board." : "🔒 You're private. Hidden from the Everyone board; your groups still see you."); }
     render();
   }
   else if (a==="excuse"){
