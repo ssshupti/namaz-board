@@ -108,6 +108,36 @@ function streakOf(id, now=new Date()){
   }
   return n;
 }
+/* Heart streaks: hearts[k-1] = days in a row with at least k fardh (k = 1..5). Excused days pause them all.
+   A day still in progress only counts once it reaches k, and only breaks a tier once k is no longer reachable. */
+function heartStreaks(id, now=new Date()){
+  if (id!==S.myId){ const st = S.stats[id] || {}; return [st.h1||0, st.h2||0, st.h3||0, st.h4||0, st.streak||0]; }
+  const m = S.members[id]; if (!m) return [0,0,0,0,0];
+  const cfg = cfgOf(m), out = [0,0,0,0,0], alive = [true,true,true,true,true];
+  let d = appDay(cfg,now);
+  for (let i=0; i<1500 && alive.some(Boolean); i++, d=addDays(d,-1)){
+    if (m.joined && d < m.joined) break;
+    const t = times(cfg,d);
+    const done = P.filter(p => codeOf(id,d,p.k).includes("f")).length;
+    if (S.excused.has(d) && done < 5) continue;
+    const reachable = done + P.filter(p => !codeOf(id,d,p.k).includes("f") && now < new Date(+t[p.k]+DAY)).length;
+    for (let k=1; k<=5; k++){
+      if (!alive[k-1]) continue;
+      if (done >= k) out[k-1]++;
+      else if (reachable < k) alive[k-1] = false;
+    }
+  }
+  return out;
+}
+const heartColors = ["#FFB3C7","#FF9CB8","#FF7AA2","#F0568A","#E0336F"];
+const miniHeart = (k, n) => `<span class="mini heart" title="${k}♥ streak: ${n} days with at least ${k} fardh"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21s-8.5-5.3-10.6-10.1C-.2 6.6 2.4 1.5 7 1.5c2.3 0 4 1.3 5 3 1-1.7 2.7-3 5-3 4.6 0 7.2 5.1 5.6 9.4C20.5 15.7 12 21 12 21z" fill="${heartColors[k-1]}"/><text x="12" y="13.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" font-family="sans-serif">${k}</text></svg>${n}</span>`;
+/* Best badge to show next to a name: the flame if they have a 5-fardh streak, otherwise their highest live heart. */
+function bestBadge(id){
+  const h = heartStreaks(id);
+  if (h[4] > 0) return miniFlame(h[4]);
+  for (let k=4; k>=1; k--) if (h[k-1] > 0) return miniHeart(k, h[k-1]);
+  return miniFlame(0);
+}
 function bestStreak(id, now=new Date()){
   const m = S.members[id]; if (!m?.joined) return streakOf(id,now);
   const today = appDay(cfgOf(m),now); let best=0, run=0;
@@ -148,7 +178,10 @@ function summaryFor(id, period){
 }
 function myStats(now=new Date()){
   const w = memberSummary(S.myId,"7",now), mo = memberSummary(S.myId,"month",now);
-  return {user_id:S.myId, streak:streakOf(S.myId,now), best:bestStreak(S.myId,now), wk_due:w.due, wk_done:w.done, mo_due:mo.due, mo_done:mo.done, mo_pts:mo.pts};
+  const h = heartStreaks(S.myId,now);
+  const st = {user_id:S.myId, streak:streakOf(S.myId,now), best:bestStreak(S.myId,now), wk_due:w.due, wk_done:w.done, mo_due:mo.due, mo_done:mo.done, mo_pts:mo.pts};
+  if (!S.noHearts) Object.assign(st, {h1:h[0], h2:h[1], h3:h[2], h4:h[3]});
+  return st;
 }
 let statsT = null;
 function pushMyStats(){
@@ -156,8 +189,12 @@ function pushMyStats(){
   statsT = setTimeout(async () => {
     if (!meDoc()) return;
     const st = myStats(), prev = S.stats[S.myId];
-    if (prev && ["streak","best","wk_due","wk_done","mo_due","mo_done","mo_pts"].every(k => prev[k]===st[k])) return;
-    const {error} = await S.sb.from("member_stats").upsert({...st, updated_at:new Date().toISOString()}, {onConflict:"user_id"});
+    if (prev && Object.keys(st).every(k => prev[k]===st[k])) return;
+    let {error} = await S.sb.from("member_stats").upsert({...st, updated_at:new Date().toISOString()}, {onConflict:"user_id"});
+    if (error && /h1|h2|h3|h4|column/i.test(error.message||"")){   // database not updated for hearts yet
+      S.noHearts = true; delete st.h1; delete st.h2; delete st.h3; delete st.h4;
+      ({error} = await S.sb.from("member_stats").upsert({...st, updated_at:new Date().toISOString()}, {onConflict:"user_id"}));
+    }
     if (!error) S.stats[S.myId] = st;
   }, 800);
 }
@@ -361,7 +398,14 @@ function streakCard(){
   return `<section class="streak" aria-label="Your streak">
     <div class="flame ${lit?"lit":"dim"}">${flameSvg(lit || n>0)}<span class="n num">${n}</span>${risk?`<span class="hg" title="Streak ends soon">⌛</span>`:""}</div>
     <div><h3>${head}</h3><p class="msg ${risk?"risk":""}" style="margin:2px 0 0">${msg}</p>${visPill()}</div>
-    <div class="week">${week}</div></section>`;
+    <div class="week">${week}</div>${heartsRow()}</section>`;
+}
+function heartsRow(){
+  const h = heartStreaks(S.myId);
+  return `<div class="hearts"><div class="hlabel">Heart streaks <small>days in a row with at least ♥ fardh</small></div><div class="hrow">${h.map((n,i)=>`
+    <div class="hcell ${n?"on":""}" title="${i+1}♥: ${n} day${n===1?"":"s"} in a row with at least ${i+1} fardh">
+      <svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21s-8.5-5.3-10.6-10.1C-.2 6.6 2.4 1.5 7 1.5c2.3 0 4 1.3 5 3 1-1.7 2.7-3 5-3 4.6 0 7.2 5.1 5.6 9.4C20.5 15.7 12 21 12 21z" fill="${n?heartColors[i]:"var(--off)"}" stroke="${n?"none":"var(--line)"}" stroke-width="1.5"/><text x="12" y="13.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="${n?"#fff":"var(--muted)"}" font-family="sans-serif">${i+1}</text></svg>
+      <b class="num">${n}</b></div>`).join("")}</div></div>`;
 }
 function visPill(){
   const pub = isPub(S.myId), sure = S.confirmVis, n = S.groups.length;
@@ -377,7 +421,7 @@ function friendsStrip(){
   return `<section class="friends"><div class="sechead"><h3>Everyone's streaks</h3><p>Ring = today's fardh</p></div><div class="fstrip">${rows.map(r=>`
     <button class="fr" data-act="openfr" data-id="${esc(r.id)}" aria-label="${esc(r.m.name||"Someone")}: ${r.s}-day streak">
       <span class="ring ${r.seeDay?"":"plain"} ${r.seeDay&&r.n===5?"full":""}" style="--p:${r.n*20}%">${avatar(r.id,r.m.name)}${r.seeDay?`<span class="cnt num">${r.n}/5</span>`:""}</span>
-      <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}</span>${miniFlame(r.s)}</button>`).join("")}</div></section>`;
+      <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}</span>${bestBadge(r.id)}</button>`).join("")}</div></section>`;
 }
 
 /* ---------- views ---------- */
@@ -448,7 +492,7 @@ function leaderboard(ids, full){
   if (rows.length >= 3){
     const order = [rows[1],rows[0],rows[2]], cls = ["p2","p1","p3"], place = ["2nd","1st","3rd"];
     html += `<div class="podium">${order.map((r,i)=>`<div class="pod ${cls[i]}">${avatar(r.id,r.m.name,i===1)}<span class="nm">${esc(r.m.name||"Someone")}</span>
-      <div class="blk"><span class="g">${grade(r.s.pct)}</span>${miniFlame(r.s.streak)}<span class="pl">${place[i]}</span></div></div>`).join("")}</div>`;
+      <div class="blk"><span class="g">${grade(r.s.pct)}</span>${bestBadge(r.id)}<span class="pl">${place[i]}</span></div></div>`).join("")}</div>`;
   }
   html += `<div class="list">`;
   rows.forEach((r,i) => {
@@ -456,7 +500,7 @@ function leaderboard(ids, full){
     const canDetail = r.id===S.myId || full;
     html += `<div class="person"><button data-act="open" data-id="${esc(r.id)}" aria-expanded="${S.open===r.id}">
       <span class="rank">${i+1}</span>${avatar(r.id,r.m.name)}
-      <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${miniFlame(r.s.streak)}</span>
+      <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${bestBadge(r.id)}</span>
         <span class="bar"><i style="width:${r.s.pct??0}%"></i></span>
         <span class="pstats num"><span>${r.s.done}/${r.s.due} fardh</span>${showX && !(r.s.ptsMonthOnly) ?`<span>${r.s.pts} pts</span>`:""}${canDetail && r.s.dots?`<span class="dots" title="Today's fardh">${r.s.dots.map(d=>`<i class="${d}"></i>`).join("")}</span>`:""}</span></span>
       <span class="grade ${low?"low":""}">${grade(r.s.pct)}</span></button>
