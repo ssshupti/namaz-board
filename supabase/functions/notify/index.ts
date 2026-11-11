@@ -96,7 +96,11 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: "bad VAPID secret: " + String((e as Error)?.message ?? e) }, 500);
   }
-  const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
+  // Newer projects expose secret keys as a JSON dictionary; older ones use the legacy service role key.
+  let serverKey = "";
+  try { const o = JSON.parse(env("SUPABASE_SECRET_KEYS") || "{}"); serverKey = o.default ?? Object.values(o)[0] ?? ""; } catch { /* ignore */ }
+  serverKey ||= env("SUPABASE_SERVICE_ROLE_KEY");
+  const db = createClient(env("SUPABASE_URL"), serverKey, { auth: { persistSession: false } });
   const appUrl = env("APP_URL") || "./";
 
   const send = async (userId: string, title: string, body: string, tag: string) => {
