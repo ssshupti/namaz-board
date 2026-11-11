@@ -11,17 +11,90 @@ import webpush from "npm:web-push@3.6.7";
 import adhan from "npm:adhan@4.4.3";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
-const CITIES: Record<string, { lat: number; lng: number; tz: string; name: string }> = {
-  dhaka: { name: "Dhaka", lat: 23.8103, lng: 90.4125, tz: "Asia/Dhaka" },
-  chattogram: { name: "Chattogram", lat: 22.3569, lng: 91.7832, tz: "Asia/Dhaka" },
-  sylhet: { name: "Sylhet", lat: 24.8949, lng: 91.8687, tz: "Asia/Dhaka" },
-  rajshahi: { name: "Rajshahi", lat: 24.3745, lng: 88.6042, tz: "Asia/Dhaka" },
-  khulna: { name: "Khulna", lat: 22.8456, lng: 89.5403, tz: "Asia/Dhaka" },
-  london: { name: "London", lat: 51.5074, lng: -0.1278, tz: "Europe/London" },
-  birmingham: { name: "Birmingham", lat: 52.4862, lng: -1.8904, tz: "Europe/London" },
-  manchester: { name: "Manchester", lat: 53.4808, lng: -2.2426, tz: "Europe/London" },
+const CITIES: Record<string, { name: string; group: string; lat: number; lng: number; tz: string; method: string }> = {
+  dhaka:{name:"Dhaka",group:"Bangladesh",lat:23.8103,lng:90.4125,tz:"Asia/Dhaka",method:"Karachi"},
+  chattogram:{name:"Chattogram",group:"Bangladesh",lat:22.3569,lng:91.7832,tz:"Asia/Dhaka",method:"Karachi"},
+  sylhet:{name:"Sylhet",group:"Bangladesh",lat:24.8949,lng:91.8687,tz:"Asia/Dhaka",method:"Karachi"},
+  rajshahi:{name:"Rajshahi",group:"Bangladesh",lat:24.3745,lng:88.6042,tz:"Asia/Dhaka",method:"Karachi"},
+  khulna:{name:"Khulna",group:"Bangladesh",lat:22.8456,lng:89.5403,tz:"Asia/Dhaka",method:"Karachi"},
+  barishal:{name:"Barishal",group:"Bangladesh",lat:22.701,lng:90.3535,tz:"Asia/Dhaka",method:"Karachi"},
+  rangpur:{name:"Rangpur",group:"Bangladesh",lat:25.7439,lng:89.2752,tz:"Asia/Dhaka",method:"Karachi"},
+  mymensingh:{name:"Mymensingh",group:"Bangladesh",lat:24.7471,lng:90.4203,tz:"Asia/Dhaka",method:"Karachi"},
+  cumilla:{name:"Cumilla",group:"Bangladesh",lat:23.4607,lng:91.1809,tz:"Asia/Dhaka",method:"Karachi"},
+  gazipur:{name:"Gazipur",group:"Bangladesh",lat:23.9999,lng:90.4203,tz:"Asia/Dhaka",method:"Karachi"},
+  narayanganj:{name:"Narayanganj",group:"Bangladesh",lat:23.6238,lng:90.5,tz:"Asia/Dhaka",method:"Karachi"},
+  coxsbazar:{name:"Cox's Bazar",group:"Bangladesh",lat:21.4272,lng:92.0058,tz:"Asia/Dhaka",method:"Karachi"},
+  bogura:{name:"Bogura",group:"Bangladesh",lat:24.8466,lng:89.3773,tz:"Asia/Dhaka",method:"Karachi"},
+  jashore:{name:"Jashore",group:"Bangladesh",lat:23.1664,lng:89.2081,tz:"Asia/Dhaka",method:"Karachi"},
+  noakhali:{name:"Noakhali",group:"Bangladesh",lat:22.8696,lng:91.0995,tz:"Asia/Dhaka",method:"Karachi"},
+  feni:{name:"Feni",group:"Bangladesh",lat:23.0159,lng:91.3976,tz:"Asia/Dhaka",method:"Karachi"},
+  brahmanbaria:{name:"Brahmanbaria",group:"Bangladesh",lat:23.9571,lng:91.1119,tz:"Asia/Dhaka",method:"Karachi"},
+  tangail:{name:"Tangail",group:"Bangladesh",lat:24.2513,lng:89.9167,tz:"Asia/Dhaka",method:"Karachi"},
+  dinajpur:{name:"Dinajpur",group:"Bangladesh",lat:25.6217,lng:88.6354,tz:"Asia/Dhaka",method:"Karachi"},
+  kushtia:{name:"Kushtia",group:"Bangladesh",lat:23.9013,lng:89.1203,tz:"Asia/Dhaka",method:"Karachi"},
+  pabna:{name:"Pabna",group:"Bangladesh",lat:24.0064,lng:89.2372,tz:"Asia/Dhaka",method:"Karachi"},
+  moulvibazar:{name:"Moulvibazar",group:"Bangladesh",lat:24.4829,lng:91.7774,tz:"Asia/Dhaka",method:"Karachi"},
+  habiganj:{name:"Habiganj",group:"Bangladesh",lat:24.3745,lng:91.4155,tz:"Asia/Dhaka",method:"Karachi"},
+  sunamganj:{name:"Sunamganj",group:"Bangladesh",lat:25.0658,lng:91.395,tz:"Asia/Dhaka",method:"Karachi"},
+  london:{name:"London",group:"United Kingdom",lat:51.5074,lng:-0.1278,tz:"Europe/London",method:"MoonsightingCommittee"},
+  birmingham:{name:"Birmingham",group:"United Kingdom",lat:52.4862,lng:-1.8904,tz:"Europe/London",method:"MoonsightingCommittee"},
+  manchester:{name:"Manchester",group:"United Kingdom",lat:53.4808,lng:-2.2426,tz:"Europe/London",method:"MoonsightingCommittee"},
+  leeds:{name:"Leeds",group:"United Kingdom",lat:53.8008,lng:-1.5491,tz:"Europe/London",method:"MoonsightingCommittee"},
+  bradford:{name:"Bradford",group:"United Kingdom",lat:53.796,lng:-1.7594,tz:"Europe/London",method:"MoonsightingCommittee"},
+  leicester:{name:"Leicester",group:"United Kingdom",lat:52.6369,lng:-1.1398,tz:"Europe/London",method:"MoonsightingCommittee"},
+  sheffield:{name:"Sheffield",group:"United Kingdom",lat:53.3811,lng:-1.4701,tz:"Europe/London",method:"MoonsightingCommittee"},
+  liverpool:{name:"Liverpool",group:"United Kingdom",lat:53.4084,lng:-2.9916,tz:"Europe/London",method:"MoonsightingCommittee"},
+  bristol:{name:"Bristol",group:"United Kingdom",lat:51.4545,lng:-2.5879,tz:"Europe/London",method:"MoonsightingCommittee"},
+  nottingham:{name:"Nottingham",group:"United Kingdom",lat:52.9548,lng:-1.1581,tz:"Europe/London",method:"MoonsightingCommittee"},
+  coventry:{name:"Coventry",group:"United Kingdom",lat:52.4068,lng:-1.5197,tz:"Europe/London",method:"MoonsightingCommittee"},
+  luton:{name:"Luton",group:"United Kingdom",lat:51.8787,lng:-0.42,tz:"Europe/London",method:"MoonsightingCommittee"},
+  oldham:{name:"Oldham",group:"United Kingdom",lat:53.5409,lng:-2.1114,tz:"Europe/London",method:"MoonsightingCommittee"},
+  newcastle:{name:"Newcastle",group:"United Kingdom",lat:54.9783,lng:-1.6178,tz:"Europe/London",method:"MoonsightingCommittee"},
+  cardiff:{name:"Cardiff",group:"United Kingdom",lat:51.4816,lng:-3.1791,tz:"Europe/London",method:"MoonsightingCommittee"},
+  glasgow:{name:"Glasgow",group:"United Kingdom",lat:55.8642,lng:-4.2518,tz:"Europe/London",method:"MoonsightingCommittee"},
+  edinburgh:{name:"Edinburgh",group:"United Kingdom",lat:55.9533,lng:-3.1883,tz:"Europe/London",method:"MoonsightingCommittee"},
+  dublin:{name:"Dublin",group:"Ireland",lat:53.3498,lng:-6.2603,tz:"Europe/Dublin",method:"MoonsightingCommittee"},
+  kolkata:{name:"Kolkata",group:"India",lat:22.5726,lng:88.3639,tz:"Asia/Kolkata",method:"Karachi"},
+  delhi:{name:"Delhi",group:"India",lat:28.6139,lng:77.209,tz:"Asia/Kolkata",method:"Karachi"},
+  mumbai:{name:"Mumbai",group:"India",lat:19.076,lng:72.8777,tz:"Asia/Kolkata",method:"Karachi"},
+  karachi:{name:"Karachi",group:"Pakistan",lat:24.8607,lng:67.0011,tz:"Asia/Karachi",method:"Karachi"},
+  lahore:{name:"Lahore",group:"Pakistan",lat:31.5204,lng:74.3587,tz:"Asia/Karachi",method:"Karachi"},
+  islamabad:{name:"Islamabad",group:"Pakistan",lat:33.6844,lng:73.0479,tz:"Asia/Karachi",method:"Karachi"},
+  kathmandu:{name:"Kathmandu",group:"Nepal",lat:27.7172,lng:85.324,tz:"Asia/Kathmandu",method:"Karachi"},
+  makkah:{name:"Makkah",group:"Saudi Arabia",lat:21.3891,lng:39.8579,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  madinah:{name:"Madinah",group:"Saudi Arabia",lat:24.5247,lng:39.5692,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  riyadh:{name:"Riyadh",group:"Saudi Arabia",lat:24.7136,lng:46.6753,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  jeddah:{name:"Jeddah",group:"Saudi Arabia",lat:21.4858,lng:39.1925,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  dubai:{name:"Dubai",group:"UAE",lat:25.2048,lng:55.2708,tz:"Asia/Dubai",method:"Dubai"},
+  abudhabi:{name:"Abu Dhabi",group:"UAE",lat:24.4539,lng:54.3773,tz:"Asia/Dubai",method:"Dubai"},
+  sharjah:{name:"Sharjah",group:"UAE",lat:25.3463,lng:55.4209,tz:"Asia/Dubai",method:"Dubai"},
+  doha:{name:"Doha",group:"Qatar",lat:25.2854,lng:51.531,tz:"Asia/Qatar",method:"Qatar"},
+  kuwait:{name:"Kuwait City",group:"Kuwait",lat:29.3759,lng:47.9774,tz:"Asia/Kuwait",method:"Kuwait"},
+  manama:{name:"Manama",group:"Bahrain",lat:26.2285,lng:50.586,tz:"Asia/Bahrain",method:"UmmAlQura"},
+  muscat:{name:"Muscat",group:"Oman",lat:23.588,lng:58.3829,tz:"Asia/Muscat",method:"UmmAlQura"},
+  istanbul:{name:"Istanbul",group:"Turkey",lat:41.0082,lng:28.9784,tz:"Europe/Istanbul",method:"Turkey"},
+  ankara:{name:"Ankara",group:"Turkey",lat:39.9334,lng:32.8597,tz:"Europe/Istanbul",method:"Turkey"},
+  cairo:{name:"Cairo",group:"Egypt",lat:30.0444,lng:31.2357,tz:"Africa/Cairo",method:"Egyptian"},
+  kualalumpur:{name:"Kuala Lumpur",group:"Malaysia",lat:3.139,lng:101.6869,tz:"Asia/Kuala_Lumpur",method:"Singapore"},
+  singapore:{name:"Singapore",group:"Singapore",lat:1.3521,lng:103.8198,tz:"Asia/Singapore",method:"Singapore"},
+  jakarta:{name:"Jakarta",group:"Indonesia",lat:-6.2088,lng:106.8456,tz:"Asia/Jakarta",method:"Singapore"},
+  paris:{name:"Paris",group:"France",lat:48.8566,lng:2.3522,tz:"Europe/Paris",method:"MuslimWorldLeague"},
+  berlin:{name:"Berlin",group:"Germany",lat:52.52,lng:13.405,tz:"Europe/Berlin",method:"MuslimWorldLeague"},
+  rome:{name:"Rome",group:"Italy",lat:41.9028,lng:12.4964,tz:"Europe/Rome",method:"MuslimWorldLeague"},
+  madrid:{name:"Madrid",group:"Spain",lat:40.4168,lng:-3.7038,tz:"Europe/Madrid",method:"MuslimWorldLeague"},
+  lisbon:{name:"Lisbon",group:"Portugal",lat:38.7223,lng:-9.1393,tz:"Europe/Lisbon",method:"MuslimWorldLeague"},
+  amsterdam:{name:"Amsterdam",group:"Netherlands",lat:52.3676,lng:4.9041,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
+  stockholm:{name:"Stockholm",group:"Sweden",lat:59.3293,lng:18.0686,tz:"Europe/Stockholm",method:"MuslimWorldLeague"},
+  newyork:{name:"New York",group:"USA",lat:40.7128,lng:-74.006,tz:"America/New_York",method:"NorthAmerica"},
+  chicago:{name:"Chicago",group:"USA",lat:41.8781,lng:-87.6298,tz:"America/Chicago",method:"NorthAmerica"},
+  houston:{name:"Houston",group:"USA",lat:29.7604,lng:-95.3698,tz:"America/Chicago",method:"NorthAmerica"},
+  losangeles:{name:"Los Angeles",group:"USA",lat:34.0522,lng:-118.2437,tz:"America/Los_Angeles",method:"NorthAmerica"},
+  toronto:{name:"Toronto",group:"Canada",lat:43.6532,lng:-79.3832,tz:"America/Toronto",method:"NorthAmerica"},
+  sydney:{name:"Sydney",group:"Australia",lat:-33.8688,lng:151.2093,tz:"Australia/Sydney",method:"MuslimWorldLeague"},
+  melbourne:{name:"Melbourne",group:"Australia",lat:-37.8136,lng:144.9631,tz:"Australia/Melbourne",method:"MuslimWorldLeague"},
+  tokyo:{name:"Tokyo",group:"Japan",lat:35.6762,lng:139.6503,tz:"Asia/Tokyo",method:"MuslimWorldLeague"}
 };
-const METHODS = ["Karachi", "MoonsightingCommittee", "MuslimWorldLeague", "NorthAmerica", "Egyptian", "UmmAlQura"];
+const METHODS = ["Karachi", "MoonsightingCommittee", "MuslimWorldLeague", "NorthAmerica", "UmmAlQura", "Dubai", "Qatar", "Kuwait", "Egyptian", "Turkey", "Singapore"];
 const FARDH = [
   { k: "fajr", en: "Fajr", bn: "ফজর", end: "sunrise" },
   { k: "dhuhr", en: "Dhuhr", bn: "যোহর", end: "asr" },
@@ -32,7 +105,7 @@ const FARDH = [
 const WINDOW_MS = 10 * 60e3;      // cron can run late; send if we're within 10 min of the moment
 const END_LEAD_MS = 30 * 60e3;    // streak-saver goes 30 min before the waqt ends
 
-type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean };
+type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null };
 type Times = Record<string, Date>;
 
 const ymd = (d: Date, tz: string) =>
@@ -42,14 +115,17 @@ const fmtT = (d: Date, tz: string) =>
   new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }).format(d).replace(/\s/, " ");
 
 export function cfgOf(m: Partial<Member>) {
+  const custom = m.city === "custom" && Number.isFinite(m.lat) && Number.isFinite(m.lng) && !!m.tz;
+  const city = custom ? "custom" : (m.city && CITIES[m.city] ? m.city : "dhaka");
   return {
-    city: m.city && CITIES[m.city] ? m.city : "dhaka",
-    method: m.method && METHODS.includes(m.method) ? m.method : "Karachi",
+    city, lat: custom ? m.lat as number : null, lng: custom ? m.lng as number : null, tz: custom ? m.tz as string : null,
+    method: m.method && METHODS.includes(m.method) ? m.method : (CITIES[city]?.method ?? "Karachi"),
     madhab: m.madhab === "shafi" ? "shafi" : "hanafi",
   };
 }
+const loc = (cfg: ReturnType<typeof cfgOf>) => cfg.city === "custom" ? { lat: cfg.lat as number, lng: cfg.lng as number, tz: cfg.tz as string } : CITIES[cfg.city];
 export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
-  const c = CITIES[cfg.city];
+  const c = loc(cfg);
   const [y, mo, d] = ds.split("-").map(Number);
   const co = new adhan.Coordinates(c.lat, c.lng);
   // deno-lint-ignore no-explicit-any
@@ -63,7 +139,7 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 
 /** Which notifications are due right now for this member (pure; tested). */
 export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
-  const cfg = cfgOf(m), tz = CITIES[cfg.city].tz;
+  const cfg = cfgOf(m), tz = loc(cfg).tz;
   const out: { day: string; waqt: string; kind: "start" | "end"; title: string; body: string }[] = [];
   const local = ymd(now, tz);
   for (const day of [addDays(local, -1), local]) {
@@ -88,9 +164,9 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
 /* ---------- shared stats (streaks/grades friends can see; excused days stay private) ---------- */
 const DAY_MS = 24 * 3600e3;
 const PTS: Record<string, number> = { f: 10, s: 3, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
-type StatMember = { id: string; city: string; method: string; madhab: string; joined: string };
+type StatMember = { id: string; city: string; method: string; madhab: string; joined: string; lat?: number | null; lng?: number | null; tz?: string | null };
 function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
-  const tz = CITIES[cfg.city].tz, d = ymd(now, tz);
+  const tz = loc(cfg).tz, d = ymd(now, tz);
   return now < times(cfg, d).fajr ? addDays(d, -1) : d;
 }
 /** Same rules as the app: done / miss / open / excused / not-joined. */
@@ -194,7 +270,7 @@ Deno.serve(async (req) => {
   // while someone's app is closed still shows correctly to their friends).
   let statsUpdated = 0;
   if (now.getUTCMinutes() % 15 === 0 || (payload as { stats?: boolean }).stats) {
-    const { data: all } = await db.from("members").select("id,city,method,madhab,joined");
+    const { data: all } = await db.from("members").select("*");
     const since = addDays(now.toISOString().slice(0, 10), -130);
     const codes = new Map<string, string>();
     for (let from = 0; ; from += 1000) {
@@ -228,7 +304,7 @@ Deno.serve(async (req) => {
   const { data: subs } = await db.from("push_subscriptions").select("user_id");
   const ids = [...new Set((subs ?? []).map((s) => s.user_id))];
   if (!ids.length) return json({ checked: 0, sent: reqSent, statsUpdated });
-  const { data: members } = await db.from("members").select("id,name,city,method,madhab,notify_start,notify_end").in("id", ids);
+  const { data: members } = await db.from("members").select("*").in("id", ids);
   const since = addDays(now.toISOString().slice(0, 10), -2);
   const { data: logs } = await db.from("logs").select("user_id,day,waqt,code").in("user_id", ids).gte("day", since);
   const done = new Set((logs ?? []).filter((l) => (l.code ?? "").includes("f")).map((l) => `${l.user_id}|${l.day}|${l.waqt}`));

@@ -2,16 +2,89 @@
 (() => {
 const CONF = window.NAMAZ_CONFIG || {};
 const CITIES = {
-  dhaka:{name:"Dhaka",lat:23.8103,lng:90.4125,tz:"Asia/Dhaka"},
-  chattogram:{name:"Chattogram",lat:22.3569,lng:91.7832,tz:"Asia/Dhaka"},
-  sylhet:{name:"Sylhet",lat:24.8949,lng:91.8687,tz:"Asia/Dhaka"},
-  rajshahi:{name:"Rajshahi",lat:24.3745,lng:88.6042,tz:"Asia/Dhaka"},
-  khulna:{name:"Khulna",lat:22.8456,lng:89.5403,tz:"Asia/Dhaka"},
-  london:{name:"London",lat:51.5074,lng:-0.1278,tz:"Europe/London"},
-  birmingham:{name:"Birmingham",lat:52.4862,lng:-1.8904,tz:"Europe/London"},
-  manchester:{name:"Manchester",lat:53.4808,lng:-2.2426,tz:"Europe/London"}
+  dhaka:{name:"Dhaka",group:"Bangladesh",lat:23.8103,lng:90.4125,tz:"Asia/Dhaka",method:"Karachi"},
+  chattogram:{name:"Chattogram",group:"Bangladesh",lat:22.3569,lng:91.7832,tz:"Asia/Dhaka",method:"Karachi"},
+  sylhet:{name:"Sylhet",group:"Bangladesh",lat:24.8949,lng:91.8687,tz:"Asia/Dhaka",method:"Karachi"},
+  rajshahi:{name:"Rajshahi",group:"Bangladesh",lat:24.3745,lng:88.6042,tz:"Asia/Dhaka",method:"Karachi"},
+  khulna:{name:"Khulna",group:"Bangladesh",lat:22.8456,lng:89.5403,tz:"Asia/Dhaka",method:"Karachi"},
+  barishal:{name:"Barishal",group:"Bangladesh",lat:22.701,lng:90.3535,tz:"Asia/Dhaka",method:"Karachi"},
+  rangpur:{name:"Rangpur",group:"Bangladesh",lat:25.7439,lng:89.2752,tz:"Asia/Dhaka",method:"Karachi"},
+  mymensingh:{name:"Mymensingh",group:"Bangladesh",lat:24.7471,lng:90.4203,tz:"Asia/Dhaka",method:"Karachi"},
+  cumilla:{name:"Cumilla",group:"Bangladesh",lat:23.4607,lng:91.1809,tz:"Asia/Dhaka",method:"Karachi"},
+  gazipur:{name:"Gazipur",group:"Bangladesh",lat:23.9999,lng:90.4203,tz:"Asia/Dhaka",method:"Karachi"},
+  narayanganj:{name:"Narayanganj",group:"Bangladesh",lat:23.6238,lng:90.5,tz:"Asia/Dhaka",method:"Karachi"},
+  coxsbazar:{name:"Cox's Bazar",group:"Bangladesh",lat:21.4272,lng:92.0058,tz:"Asia/Dhaka",method:"Karachi"},
+  bogura:{name:"Bogura",group:"Bangladesh",lat:24.8466,lng:89.3773,tz:"Asia/Dhaka",method:"Karachi"},
+  jashore:{name:"Jashore",group:"Bangladesh",lat:23.1664,lng:89.2081,tz:"Asia/Dhaka",method:"Karachi"},
+  noakhali:{name:"Noakhali",group:"Bangladesh",lat:22.8696,lng:91.0995,tz:"Asia/Dhaka",method:"Karachi"},
+  feni:{name:"Feni",group:"Bangladesh",lat:23.0159,lng:91.3976,tz:"Asia/Dhaka",method:"Karachi"},
+  brahmanbaria:{name:"Brahmanbaria",group:"Bangladesh",lat:23.9571,lng:91.1119,tz:"Asia/Dhaka",method:"Karachi"},
+  tangail:{name:"Tangail",group:"Bangladesh",lat:24.2513,lng:89.9167,tz:"Asia/Dhaka",method:"Karachi"},
+  dinajpur:{name:"Dinajpur",group:"Bangladesh",lat:25.6217,lng:88.6354,tz:"Asia/Dhaka",method:"Karachi"},
+  kushtia:{name:"Kushtia",group:"Bangladesh",lat:23.9013,lng:89.1203,tz:"Asia/Dhaka",method:"Karachi"},
+  pabna:{name:"Pabna",group:"Bangladesh",lat:24.0064,lng:89.2372,tz:"Asia/Dhaka",method:"Karachi"},
+  moulvibazar:{name:"Moulvibazar",group:"Bangladesh",lat:24.4829,lng:91.7774,tz:"Asia/Dhaka",method:"Karachi"},
+  habiganj:{name:"Habiganj",group:"Bangladesh",lat:24.3745,lng:91.4155,tz:"Asia/Dhaka",method:"Karachi"},
+  sunamganj:{name:"Sunamganj",group:"Bangladesh",lat:25.0658,lng:91.395,tz:"Asia/Dhaka",method:"Karachi"},
+  london:{name:"London",group:"United Kingdom",lat:51.5074,lng:-0.1278,tz:"Europe/London",method:"MoonsightingCommittee"},
+  birmingham:{name:"Birmingham",group:"United Kingdom",lat:52.4862,lng:-1.8904,tz:"Europe/London",method:"MoonsightingCommittee"},
+  manchester:{name:"Manchester",group:"United Kingdom",lat:53.4808,lng:-2.2426,tz:"Europe/London",method:"MoonsightingCommittee"},
+  leeds:{name:"Leeds",group:"United Kingdom",lat:53.8008,lng:-1.5491,tz:"Europe/London",method:"MoonsightingCommittee"},
+  bradford:{name:"Bradford",group:"United Kingdom",lat:53.796,lng:-1.7594,tz:"Europe/London",method:"MoonsightingCommittee"},
+  leicester:{name:"Leicester",group:"United Kingdom",lat:52.6369,lng:-1.1398,tz:"Europe/London",method:"MoonsightingCommittee"},
+  sheffield:{name:"Sheffield",group:"United Kingdom",lat:53.3811,lng:-1.4701,tz:"Europe/London",method:"MoonsightingCommittee"},
+  liverpool:{name:"Liverpool",group:"United Kingdom",lat:53.4084,lng:-2.9916,tz:"Europe/London",method:"MoonsightingCommittee"},
+  bristol:{name:"Bristol",group:"United Kingdom",lat:51.4545,lng:-2.5879,tz:"Europe/London",method:"MoonsightingCommittee"},
+  nottingham:{name:"Nottingham",group:"United Kingdom",lat:52.9548,lng:-1.1581,tz:"Europe/London",method:"MoonsightingCommittee"},
+  coventry:{name:"Coventry",group:"United Kingdom",lat:52.4068,lng:-1.5197,tz:"Europe/London",method:"MoonsightingCommittee"},
+  luton:{name:"Luton",group:"United Kingdom",lat:51.8787,lng:-0.42,tz:"Europe/London",method:"MoonsightingCommittee"},
+  oldham:{name:"Oldham",group:"United Kingdom",lat:53.5409,lng:-2.1114,tz:"Europe/London",method:"MoonsightingCommittee"},
+  newcastle:{name:"Newcastle",group:"United Kingdom",lat:54.9783,lng:-1.6178,tz:"Europe/London",method:"MoonsightingCommittee"},
+  cardiff:{name:"Cardiff",group:"United Kingdom",lat:51.4816,lng:-3.1791,tz:"Europe/London",method:"MoonsightingCommittee"},
+  glasgow:{name:"Glasgow",group:"United Kingdom",lat:55.8642,lng:-4.2518,tz:"Europe/London",method:"MoonsightingCommittee"},
+  edinburgh:{name:"Edinburgh",group:"United Kingdom",lat:55.9533,lng:-3.1883,tz:"Europe/London",method:"MoonsightingCommittee"},
+  dublin:{name:"Dublin",group:"Ireland",lat:53.3498,lng:-6.2603,tz:"Europe/Dublin",method:"MoonsightingCommittee"},
+  kolkata:{name:"Kolkata",group:"India",lat:22.5726,lng:88.3639,tz:"Asia/Kolkata",method:"Karachi"},
+  delhi:{name:"Delhi",group:"India",lat:28.6139,lng:77.209,tz:"Asia/Kolkata",method:"Karachi"},
+  mumbai:{name:"Mumbai",group:"India",lat:19.076,lng:72.8777,tz:"Asia/Kolkata",method:"Karachi"},
+  karachi:{name:"Karachi",group:"Pakistan",lat:24.8607,lng:67.0011,tz:"Asia/Karachi",method:"Karachi"},
+  lahore:{name:"Lahore",group:"Pakistan",lat:31.5204,lng:74.3587,tz:"Asia/Karachi",method:"Karachi"},
+  islamabad:{name:"Islamabad",group:"Pakistan",lat:33.6844,lng:73.0479,tz:"Asia/Karachi",method:"Karachi"},
+  kathmandu:{name:"Kathmandu",group:"Nepal",lat:27.7172,lng:85.324,tz:"Asia/Kathmandu",method:"Karachi"},
+  makkah:{name:"Makkah",group:"Saudi Arabia",lat:21.3891,lng:39.8579,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  madinah:{name:"Madinah",group:"Saudi Arabia",lat:24.5247,lng:39.5692,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  riyadh:{name:"Riyadh",group:"Saudi Arabia",lat:24.7136,lng:46.6753,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  jeddah:{name:"Jeddah",group:"Saudi Arabia",lat:21.4858,lng:39.1925,tz:"Asia/Riyadh",method:"UmmAlQura"},
+  dubai:{name:"Dubai",group:"UAE",lat:25.2048,lng:55.2708,tz:"Asia/Dubai",method:"Dubai"},
+  abudhabi:{name:"Abu Dhabi",group:"UAE",lat:24.4539,lng:54.3773,tz:"Asia/Dubai",method:"Dubai"},
+  sharjah:{name:"Sharjah",group:"UAE",lat:25.3463,lng:55.4209,tz:"Asia/Dubai",method:"Dubai"},
+  doha:{name:"Doha",group:"Qatar",lat:25.2854,lng:51.531,tz:"Asia/Qatar",method:"Qatar"},
+  kuwait:{name:"Kuwait City",group:"Kuwait",lat:29.3759,lng:47.9774,tz:"Asia/Kuwait",method:"Kuwait"},
+  manama:{name:"Manama",group:"Bahrain",lat:26.2285,lng:50.586,tz:"Asia/Bahrain",method:"UmmAlQura"},
+  muscat:{name:"Muscat",group:"Oman",lat:23.588,lng:58.3829,tz:"Asia/Muscat",method:"UmmAlQura"},
+  istanbul:{name:"Istanbul",group:"Turkey",lat:41.0082,lng:28.9784,tz:"Europe/Istanbul",method:"Turkey"},
+  ankara:{name:"Ankara",group:"Turkey",lat:39.9334,lng:32.8597,tz:"Europe/Istanbul",method:"Turkey"},
+  cairo:{name:"Cairo",group:"Egypt",lat:30.0444,lng:31.2357,tz:"Africa/Cairo",method:"Egyptian"},
+  kualalumpur:{name:"Kuala Lumpur",group:"Malaysia",lat:3.139,lng:101.6869,tz:"Asia/Kuala_Lumpur",method:"Singapore"},
+  singapore:{name:"Singapore",group:"Singapore",lat:1.3521,lng:103.8198,tz:"Asia/Singapore",method:"Singapore"},
+  jakarta:{name:"Jakarta",group:"Indonesia",lat:-6.2088,lng:106.8456,tz:"Asia/Jakarta",method:"Singapore"},
+  paris:{name:"Paris",group:"France",lat:48.8566,lng:2.3522,tz:"Europe/Paris",method:"MuslimWorldLeague"},
+  berlin:{name:"Berlin",group:"Germany",lat:52.52,lng:13.405,tz:"Europe/Berlin",method:"MuslimWorldLeague"},
+  rome:{name:"Rome",group:"Italy",lat:41.9028,lng:12.4964,tz:"Europe/Rome",method:"MuslimWorldLeague"},
+  madrid:{name:"Madrid",group:"Spain",lat:40.4168,lng:-3.7038,tz:"Europe/Madrid",method:"MuslimWorldLeague"},
+  lisbon:{name:"Lisbon",group:"Portugal",lat:38.7223,lng:-9.1393,tz:"Europe/Lisbon",method:"MuslimWorldLeague"},
+  amsterdam:{name:"Amsterdam",group:"Netherlands",lat:52.3676,lng:4.9041,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
+  stockholm:{name:"Stockholm",group:"Sweden",lat:59.3293,lng:18.0686,tz:"Europe/Stockholm",method:"MuslimWorldLeague"},
+  newyork:{name:"New York",group:"USA",lat:40.7128,lng:-74.006,tz:"America/New_York",method:"NorthAmerica"},
+  chicago:{name:"Chicago",group:"USA",lat:41.8781,lng:-87.6298,tz:"America/Chicago",method:"NorthAmerica"},
+  houston:{name:"Houston",group:"USA",lat:29.7604,lng:-95.3698,tz:"America/Chicago",method:"NorthAmerica"},
+  losangeles:{name:"Los Angeles",group:"USA",lat:34.0522,lng:-118.2437,tz:"America/Los_Angeles",method:"NorthAmerica"},
+  toronto:{name:"Toronto",group:"Canada",lat:43.6532,lng:-79.3832,tz:"America/Toronto",method:"NorthAmerica"},
+  sydney:{name:"Sydney",group:"Australia",lat:-33.8688,lng:151.2093,tz:"Australia/Sydney",method:"MuslimWorldLeague"},
+  melbourne:{name:"Melbourne",group:"Australia",lat:-37.8136,lng:144.9631,tz:"Australia/Melbourne",method:"MuslimWorldLeague"},
+  tokyo:{name:"Tokyo",group:"Japan",lat:35.6762,lng:139.6503,tz:"Asia/Tokyo",method:"MuslimWorldLeague"}
 };
-const METHODS = {Karachi:"Karachi (Bangladesh, Pakistan)",MoonsightingCommittee:"Moonsighting Committee (UK)",MuslimWorldLeague:"Muslim World League",NorthAmerica:"ISNA (North America)",Egyptian:"Egyptian",UmmAlQura:"Umm al-Qura (Makkah)"};
+const METHODS = {Karachi:"Karachi (Bangladesh, India, Pakistan)",MoonsightingCommittee:"Moonsighting Committee (UK, Ireland)",MuslimWorldLeague:"Muslim World League (Europe, others)",NorthAmerica:"ISNA (North America)",UmmAlQura:"Umm al-Qura (Saudi, Gulf)",Dubai:"Dubai (UAE)",Qatar:"Qatar",Kuwait:"Kuwait",Egyptian:"Egyptian",Turkey:"Turkey (Diyanet)",Singapore:"Singapore, Malaysia, Indonesia"};
 const DEFAULT = {city:"dhaka",method:"Karachi",madhab:"hanafi"};
 const P = [
   {k:"fajr",en:"Fajr",bn:"ফজর",f:2,chips:[["s","Sunnah","2"]]},
@@ -46,12 +119,31 @@ const fmtDay = ds => new Date(ds+"T12:00:00Z").toLocaleDateString("en-GB",{weekd
 const fmtShortDT = (d,tz) => new Intl.DateTimeFormat("en-GB",{weekday:"short",hour:"numeric",minute:"2-digit",hour12:true,timeZone:tz}).format(d);
 const dur = ms => { const m=Math.max(0,Math.round(ms/60000)); const h=Math.floor(m/60); return h? `${h}h ${m%60}m` : `${m}m`; };
 const clock = ms => { const s=Math.max(0,Math.floor(ms/1000)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}`; };
-const cfgOf = m => ({city:CITIES[m?.city]?m.city:DEFAULT.city, method:METHODS[m?.method]?m.method:DEFAULT.method, madhab:m?.madhab==="shafi"?"shafi":"hanafi"});
+/* Where times are calculated for: a city from the list, or "custom" = the person's own (rounded) location. */
+const DEVICE_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })();
+const TZ_ALIAS = {"Asia/Calcutta":"Asia/Kolkata","Asia/Dacca":"Asia/Dhaka","Europe/Belfast":"Europe/London","America/Detroit":"America/New_York"};
+function guessCity(){ const tz = TZ_ALIAS[DEVICE_TZ] || DEVICE_TZ; return Object.keys(CITIES).find(k => CITIES[k].tz===tz) || DEFAULT.city; }
+const cfgOf = m => {
+  const custom = m?.city==="custom" && Number.isFinite(m?.lat) && Number.isFinite(m?.lng) && m?.tz;
+  const city = custom ? "custom" : (CITIES[m?.city] ? m.city : guessCity());
+  return {city, lat:custom?m.lat:null, lng:custom?m.lng:null, tz:custom?m.tz:null, place:custom?(m.place||"My location"):null,
+    method: METHODS[m?.method] ? m.method : (CITIES[city]?.method || DEFAULT.method), madhab: m?.madhab==="shafi" ? "shafi" : "hanafi"};
+};
+const loc = cfg => cfg.city==="custom" ? {name:cfg.place, lat:cfg.lat, lng:cfg.lng, tz:cfg.tz} : CITIES[cfg.city];
+function nearestCity(lat, lng){
+  let best = null, bd = Infinity;
+  for (const [k,c] of Object.entries(CITIES)){
+    const dLat=(c.lat-lat)*Math.PI/180, dLng=(c.lng-lng)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(c.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+    const km = 12742*Math.asin(Math.sqrt(a)); if (km < bd){ bd = km; best = k; }
+  }
+  return {key:best, km:bd};
+}
 const cache = new Map();
 function times(cfg, ds){
-  const key = cfg.city+cfg.method+cfg.madhab+ds;
+  const key = cfg.city+(cfg.lat??"")+","+(cfg.lng??"")+cfg.method+cfg.madhab+ds;
   if (cache.has(key)) return cache.get(key);
-  const c = CITIES[cfg.city], [y,mo,d] = ds.split("-").map(Number);
+  const c = loc(cfg), [y,mo,d] = ds.split("-").map(Number);
   const co = new adhan.Coordinates(c.lat,c.lng);
   const p = adhan.CalculationMethod[cfg.method]();
   p.madhab = cfg.madhab==="shafi" ? adhan.Madhab.Shafi : adhan.Madhab.Hanafi;
@@ -61,7 +153,7 @@ function times(cfg, ds){
   cache.set(key,r); return r;
 }
 function appDay(cfg, now=new Date()){
-  const tz = CITIES[cfg.city].tz, t = ymd(now,tz);
+  const tz = loc(cfg).tz, t = ymd(now,tz);
   return now < times(cfg,t).fajr ? addDays(t,-1) : t;
 }
 const ENDS = {fajr:"sunrise",dhuhr:"asr",asr:"maghrib",maghrib:"isha"};
@@ -206,7 +298,7 @@ function grade(pct){
 
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
-  return {name:r.name, city:r.city, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
+  return {name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
     notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
@@ -339,7 +431,7 @@ function celebrate(){
 
 /* ---------- sky hero ---------- */
 function renderSky(){
-  const m = meDoc(), cfg = cfgOf(m), c = CITIES[cfg.city], now = new Date();
+  const m = meDoc(), cfg = cfgOf(m), c = loc(cfg), now = new Date();
   const today = appDay(cfg,now), t = times(cfg,today), nextT = times(cfg,addDays(today,1));
   const seq = [["fajr",t.fajr],["sunrise",t.sunrise],["dhuhr",t.dhuhr],["asr",t.asr],["maghrib",t.maghrib],["isha",t.isha],["fajr",nextT.fajr]];
   let i = 0; for (let j=0;j<seq.length-1;j++) if (seq[j][1] <= now) i = j;
@@ -361,8 +453,9 @@ function renderSky(){
   const fresh = isFardh && now - startAt < 20*60e3 && !codeOf(S.myId,today,cur).includes("f");
   const alert = fresh ? `<div class="alert" role="status"><span>🌸 It's ${n} time!</span>${meDoc() && !S.readOnly ? `<button data-act="tog" data-ds="${today}" data-k="${cur}" data-c="f">I prayed ✓</button>` : ""}</div>` : "";
   const waqtKey = today + cur + late;
-  if (S.lastWaqt && S.lastWaqt !== waqtKey && isFardh) toast(`🌸 It's ${n} time! Go pray, then tap Fardh.`);
-  S.lastWaqt = waqtKey;
+  // Only announce a new waqt when time moves on, not when the city changes (e.g. after signing in).
+  if (S.lastWaqt && S.lastWaqt !== waqtKey && S.lastPlace === c.name && isFardh) toast(`🌸 It's ${n} time! Go pray, then tap Fardh.`);
+  S.lastWaqt = waqtKey; S.lastPlace = c.name;
   const countHtml = `${clock(endAt-now)}<small>${cur==="sunrise" ? "No fardh namaz now · until Dhuhr" : `left in this waqt · ${nextName} at ${fmtT(endAt,c.tz)}`}</small>`;
   const key = waqtKey + beads + alert + hijri + c.name;
   if (key === S.skyKey){ sky.querySelector(".count").innerHTML = countHtml; sky.querySelector(".prog i").style.width = pct.toFixed(1)+"%"; return; }
@@ -379,7 +472,7 @@ function renderSky(){
 /* ---------- streak card & friends ---------- */
 function streakCard(){
   const m = meDoc(); if (!m) return "";
-  const now = new Date(), cfg = cfgOf(m), tz = CITIES[cfg.city].tz, today = appDay(cfg,now);
+  const now = new Date(), cfg = cfgOf(m), tz = loc(cfg).tz, today = appDay(cfg,now);
   const n = streakOf(S.myId,now), st = dayState(S.myId,today,now), ys = dayState(S.myId,addDays(today,-1),now);
   const open = [...(ys.open||[]), ...(st.open||[])].sort((a,b)=>a.close-b.close);
   const doneToday = P.filter(p => codeOf(S.myId,today,p.k).includes("f")).length;
@@ -427,7 +520,7 @@ function friendsStrip(){
 
 /* ---------- views ---------- */
 function viewToday(){
-  const m = meDoc(), cfg = cfgOf(m), tz = CITIES[cfg.city].tz, now = new Date();
+  const m = meDoc(), cfg = cfgOf(m), tz = loc(cfg).tz, now = new Date();
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const canLog = !!m && !S.readOnly;
   let html = requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
@@ -571,9 +664,15 @@ function heatmap(id){
 function viewMe(){
   const m = meDoc();
   const s7 = memberSummary(S.myId,"7"), sm = memberSummary(S.myId,"month"), best = bestStreak(S.myId);
-  return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${CITIES[cfgOf(m).city].name} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
+  return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${esc(loc(cfgOf(m)).name)} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
     <div class="tiles num"><div class="tile"><b>${s7.pct==null?"–":Math.round(s7.pct)+"%"}</b><span>Fardh, 7 days</span></div><div class="tile"><b>${best}</b><span>Best streak</span></div><div class="tile"><b>${sm.pts}</b><span>Points this month</span></div></div>
     ${gradesheet(S.myId)}</div>`;
+}
+function cityOptions(cfg){
+  const groups = {};
+  for (const [k,c] of Object.entries(CITIES)) (groups[c.group] ||= []).push([k,c]);
+  const custom = cfg.city==="custom" || S.geo ? `<option value="custom" selected>📍 ${esc((S.geo||cfg).place || "My location")}</option>` : "";
+  return custom + Object.entries(groups).map(([g,list]) => `<optgroup label="${esc(g)}">${list.map(([k,c])=>`<option value="${k}" ${!S.geo && k===cfg.city?"selected":""}>${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
 }
 function viewSettings(){
   const m = meDoc() || {}, cfg = cfgOf(m), isNew = !meDoc();
@@ -583,11 +682,12 @@ function viewSettings(){
     <p>Namaz times are worked out for your own city, so each person can be somewhere different.</p>
     <label class="f">Name on the board<input id="f-name" maxlength="24" required value="${esc(m.name||guessName)}" placeholder="e.g. Shupti"></label>
     <div class="grid2">
-      <label class="f">City<select id="f-city">${Object.entries(CITIES).map(([k,c])=>`<option value="${k}" ${k===cfg.city?"selected":""}>${c.name}</option>`).join("")}</select></label>
+      <label class="f">City<select id="f-city">${cityOptions(cfg)}</select></label>
       <label class="f">Asr time<select id="f-madhab"><option value="hanafi" ${cfg.madhab==="hanafi"?"selected":""}>Hanafi (later)</option><option value="shafi" ${cfg.madhab==="shafi"?"selected":""}>Standard (earlier)</option></select></label>
     </div>
     <label class="f">Fajr & Isha method<select id="f-method">${Object.entries(METHODS).map(([k,l])=>`<option value="${k}" ${k===cfg.method?"selected":""}>${l}</option>`).join("")}</select></label>
-    <p class="note">In Bangladesh use Karachi. In the UK use Moonsighting Committee.</p>
+    <div class="locrow"><button type="button" class="ghost" data-act="geo">📍 Use my location</button><span class="note" id="geoNote">${cfg.city==="custom" ? `Using ${esc(cfg.place)} (rounded to about 10 km).` : "Optional. Exact times for where you are. Your position is rounded to about 10 km."}</span></div>
+    <p class="note">Picking a city also picks the usual method there. You can still change it.</p>
     <fieldset class="vis"><legend>Everyone board</legend>
       <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak and grade. My groups see me too.</small></span></label>
       <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>I'm hidden from the Everyone board. My groups still see my record.</small></span></label>
@@ -804,6 +904,19 @@ document.addEventListener("click", async e => {
   else if (a==="pushon") enablePush();
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
+  else if (a==="geo"){
+    if (!navigator.geolocation){ toast("This browser can't share location. Pick your city from the list instead."); return; }
+    $("geoNote").textContent = "Finding you…";
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = Math.round(pos.coords.latitude*10)/10, lng = Math.round(pos.coords.longitude*10)/10;
+      const near = nearestCity(lat, lng), nc = CITIES[near.key];
+      const place = near.km < 60 ? `Near ${nc.name}` : "My location";
+      S.geo = {lat, lng, tz: TZ_ALIAS[DEVICE_TZ] || DEVICE_TZ || nc.tz, place};
+      $("f-city").innerHTML = cityOptions(cfgOf(meDoc()||{}));
+      if (near.km < 400) $("f-method").value = nc.method;
+      $("geoNote").textContent = `Using ${place} (rounded to about 10 km). Tap Save.`;
+    }, () => { $("geoNote").textContent = "Location wasn't shared. Pick your city from the list instead."; }, {enableHighAccuracy:false, timeout:15000, maximumAge:600000});
+  }
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
   else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
@@ -893,6 +1006,10 @@ document.addEventListener("click", async e => {
   }
 });
 document.addEventListener("keydown", e => { if (e.key==="Escape" && S.tour!=null){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} } });
+document.addEventListener("change", e => {
+  if (e.target.id !== "f-city") return;
+  if (e.target.value !== "custom"){ S.geo = null; const c = CITIES[e.target.value]; if (c && $("f-method")) $("f-method").value = c.method; }
+});
 document.addEventListener("change", async e => {
   if (e.target.dataset.act !== "ntoggle") return;
   const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked};
@@ -934,6 +1051,7 @@ document.addEventListener("submit", async e => {
   if (e.target.id !== "setupForm") return;
   const name = $("f-name").value.trim().slice(0,24); if (!name) return;
   const prof = {name, city:$("f-city").value, method:$("f-method").value, madhab:$("f-madhab").value, show_extras:$("f-extras").checked, is_public:$("f-public").checked};
+  if (prof.city==="custom"){ const g = S.geo || meDoc(); Object.assign(prof, {lat:g.lat, lng:g.lng, tz:g.tz, place:g.place}); }
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
   try {
     if (meDoc()){
@@ -947,7 +1065,7 @@ document.addEventListener("submit", async e => {
       let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
       if (code) setTimeout(() => joinWithCode(code), 600);
     }
-    cache.clear(); S.view = "today"; S.dayOff = 0; render(); toast("Saved");
+    S.geo = null; cache.clear(); S.view = "today"; S.dayOff = 0; render(); toast("Saved");
   } catch(err){
     btn.disabled = false; toast("Couldn't save: " + (err?.message || "try again in a moment."));
   }
