@@ -289,8 +289,13 @@ function streakCard(){
   }).join("");
   return `<section class="streak" aria-label="Your streak">
     <div class="flame ${lit?"lit":"dim"}">${flameSvg(lit || n>0)}<span class="n num">${n}</span>${risk?`<span class="hg" title="Streak ends soon">⌛</span>`:""}</div>
-    <div><h3>${head}</h3><p class="msg ${risk?"risk":""}" style="margin:2px 0 0">${msg}</p></div>
+    <div><h3>${head}</h3><p class="msg ${risk?"risk":""}" style="margin:2px 0 0">${msg}</p>${visPill()}</div>
     <div class="week">${week}</div></section>`;
+}
+function visPill(){
+  const pub = isPub(S.myId), sure = S.confirmVis;
+  const label = sure ? (pub ? "Make private? Tap again" : "Make public? Tap again") : (pub ? "🌸 Public" : "🔒 Private");
+  return `<button class="vispill ${sure?"sure":""}" data-act="vis" title="${pub?"Friends can see your namaz":"Only you can see your namaz"}">${label}</button>`;
 }
 function friendsStrip(){
   const ids = Object.keys(S.members).filter(id => id===S.myId || isPub(id)); if (!ids.length) return "";
@@ -554,6 +559,15 @@ document.addEventListener("click", async e => {
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
+  else if (a==="vis"){
+    if (!S.confirmVis){ S.confirmVis = true; render(); clearTimeout(S.visT); S.visT = setTimeout(()=>{ S.confirmVis = false; render(); }, 4000); return; }
+    clearTimeout(S.visT); S.confirmVis = false;
+    const to = !isPub(S.myId);
+    const {error} = await S.sb.from("members").update({is_public:to}).eq("id", S.myId);
+    if (error) toast("Couldn't change that. Try again in a moment.");
+    else { meDoc().isPublic = to; toast(to ? "🌸 You're public. Friends can see your namaz." : "🔒 You're private. Only you can see your namaz."); }
+    render();
+  }
   else if (a==="openfr"){ if (b.dataset.id===S.myId && !isPub(S.myId)) S.view = "me"; else { S.view = "board"; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
   else if (a==="uninvite"){
     const {error} = await S.sb.from("invites").delete().eq("email", b.dataset.e);
