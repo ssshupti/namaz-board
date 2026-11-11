@@ -88,9 +88,15 @@ const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { sta
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return json({ ok: true });
-  const env = (k: string) => Deno.env.get(k) ?? "";
+  const env = (k: string) => (Deno.env.get(k) ?? "").trim();
+  const missing = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT", "CRON_SECRET"].filter((k) => !env(k));
+  if (missing.length) return json({ error: "missing secrets: " + missing.join(", ") }, 500);
+  try {
+    webpush.setVapidDetails(env("VAPID_SUBJECT"), env("VAPID_PUBLIC_KEY"), env("VAPID_PRIVATE_KEY"));
+  } catch (e) {
+    return json({ error: "bad VAPID secret: " + String((e as Error)?.message ?? e) }, 500);
+  }
   const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
-  webpush.setVapidDetails(env("VAPID_SUBJECT") || "mailto:admin@example.com", env("VAPID_PUBLIC_KEY"), env("VAPID_PRIVATE_KEY"));
   const appUrl = env("APP_URL") || "./";
 
   const send = async (userId: string, title: string, body: string, tag: string) => {
