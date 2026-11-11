@@ -418,7 +418,7 @@ function excusedRow(ds){
 function viewBoard(){
   const g = curGroup();
   const chips = `<div class="gchips"><button class="gchip" data-act="gpick" data-id="all" aria-pressed="${S.gid==="all"}">🌍 Everyone</button>${S.groups.map(x => `<button class="gchip" data-act="gpick" data-id="${x.id}" aria-pressed="${g&&x.id===g.id}">${esc(x.name)}</button>`).join("")}
-    <button class="gchip add" data-act="gnew">＋ New</button><button class="gchip add" data-act="gjoin">Join with code</button></div>`;
+    <button class="gchip add" data-act="gnew">＋ New group</button><button class="gchip add" data-act="gjoin">＋ Join a group</button></div>`;
   if (S.gform) return chips + groupForm();
   if (S.gid==="all") return chips + everyoneBoard();
   if (!g) return chips + `<div class="panel empty"><h3>Your namaz is private 🔒</h3><p>Nobody can see your log until you're in a group. Create one and share its link, or join a friend's group with their code.</p>
