@@ -317,3 +317,24 @@ img{max-width:100%}
 .waiting{display:flex;gap:8px;justify-content:center}
 .waiting i{width:10px;height:10px;border-radius:50%;background:var(--rose);animation:bounce 1.2s ease-in-out infinite}
 .waiting i:nth-child(2){animation-delay:.15s;background:var(--lav)}.waiting i:nth-child(3){animation-delay:.3s;background:var(--gold)}
+/* groups */
+.gchips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.gchips::-webkit-scrollbar{display:none}
+.gchip{flex:none;border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:800;font-size:14px;color:var(--ink);white-space:nowrap}
+.gchip[aria-pressed="true"]{background:var(--rose);border-color:var(--rose);color:#fff;box-shadow:0 3px 0 color-mix(in srgb,var(--rose) 55%,#000 12%)}
+.gchip.add{color:var(--muted);border-style:dashed}
+.ghead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border-radius:24px;padding:12px 14px 12px 18px;box-shadow:var(--shadow)}
+.ghead h3{font-family:var(--display);font-size:22px;font-weight:800;line-height:1.1}
+.ghead p{margin:2px 0 0;font-size:13px;font-weight:700;color:var(--muted)}
+.ghead .ghost{padding:7px 14px}
+.ghost.danger{color:var(--warn)}
+.ghost.sure,.exbtn.sure{background:var(--warn);border-color:var(--warn);color:#fff}
+.ring.plain{background:transparent;padding:4px}
+/* excused */
+.exrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exrow.on{background:color-mix(in srgb,var(--lav) 18%,var(--surface));border:2px dashed color-mix(in srgb,var(--lav) 60%,var(--line));border-radius:18px;padding:10px 12px;font-size:14px}
+.exrow.on span{flex:1 1 200px}
+.exrow .ghost{padding:6px 14px}
+.exbtn{border:2px dashed var(--line);background:transparent;border-radius:999px;padding:5px 13px;font-size:13px;font-weight:700;color:var(--muted)}
+.wd.ex i{background:color-mix(in srgb,var(--lav) 22%,var(--surface));font-size:12px;color:var(--muted)}
+.heat i.ex{background:color-mix(in srgb,var(--lav) 35%,var(--off));background-image:repeating-linear-gradient(45deg,transparent 0 2px,rgba(255,255,255,.35) 2px 4px)}

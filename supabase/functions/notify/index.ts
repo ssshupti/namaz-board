@@ -62,11 +62,12 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 }
 
 /** Which notifications are due right now for this member (pure; tested). */
-export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean) {
+export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
   const cfg = cfgOf(m), tz = CITIES[cfg.city].tz;
   const out: { day: string; waqt: string; kind: "start" | "end"; title: string; body: string }[] = [];
   const local = ymd(now, tz);
   for (const day of [addDays(local, -1), local]) {
+    if (excused(day)) continue; // excused days get no alerts
     const t = times(cfg, day), next = times(cfg, addDays(day, 1));
     for (const p of FARDH) {
       const start = t[p.k], end = p.end ? t[p.end] : next.fajr;
@@ -82,6 +83,44 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
     }
   }
   return out;
+}
+
+/* ---------- shared stats (streaks/grades friends can see; excused days stay private) ---------- */
+const DAY_MS = 24 * 3600e3;
+const PTS: Record<string, number> = { f: 10, s: 3, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
+type StatMember = { id: string; city: string; method: string; madhab: string; joined: string };
+function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
+  const tz = CITIES[cfg.city].tz, d = ymd(now, tz);
+  return now < times(cfg, d).fajr ? addDays(d, -1) : d;
+}
+/** Same rules as the app: done / miss / open / excused / not-joined. */
+export function computeStats(m: StatMember, code: (day: string, waqt: string) => string, isEx: (day: string) => boolean, now: Date) {
+  const cfg = cfgOf(m), today = appDay(cfg, now);
+  const allF = (d: string) => FARDH.every((p) => code(d, p.k).includes("f"));
+  const state = (d: string) => {
+    if (m.joined && d < m.joined) return "na";
+    if (isEx(d) && !allF(d)) return "ex";
+    const t = times(cfg, d);
+    for (const p of FARDH) if (!code(d, p.k).includes("f") && +now >= +t[p.k] + DAY_MS) return "miss";
+    return allF(d) ? "done" : "open";
+  };
+  let streak = 0;
+  for (let i = 0, d = today; i < 1500; i++, d = addDays(d, -1)) { const st = state(d); if (st === "na" || st === "miss") break; if (st === "done") streak++; }
+  let best = 0, run = 0;
+  if (m.joined) for (let d = m.joined, i = 0; d <= today && i < 1500; d = addDays(d, 1), i++) { const st = state(d); if (st === "done") { run++; best = Math.max(best, run); } else if (st === "miss") run = 0; }
+  best = Math.max(best, streak);
+  const range = (start: string) => {
+    if (m.joined && m.joined > start) start = m.joined;
+    let due = 0, done = 0, pts = 0;
+    for (let d = start; d <= today; d = addDays(d, 1)) {
+      const t = times(cfg, d), ex = isEx(d);
+      for (const p of FARDH) { const c = code(d, p.k), f = c.includes("f"); if (now >= t[p.k]) { if (f || !ex) due++; if (f) done++; } for (const ch of c) pts += PTS[ch] || 0; }
+      for (const ch of code(d, "x")) pts += PTS[ch] || 0;
+    }
+    return { due, done, pts };
+  };
+  const w = range(addDays(today, -6)), mo = range(today.slice(0, 8) + "01");
+  return { user_id: m.id, streak, best, wk_due: w.due, wk_done: w.done, mo_due: mo.due, mo_done: mo.done, mo_pts: mo.pts };
 }
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, x-client-info, apikey, content-type" } });
@@ -138,6 +177,24 @@ Deno.serve(async (req) => {
 
   const now = new Date();
 
+  // Every 15 minutes, refresh everyone's shared streak/grade numbers (so a streak that breaks
+  // while someone's app is closed still shows correctly to their friends).
+  let statsUpdated = 0;
+  if (now.getUTCMinutes() % 15 === 0 || (payload as { stats?: boolean }).stats) {
+    const { data: all } = await db.from("members").select("id,city,method,madhab,joined");
+    const since = addDays(now.toISOString().slice(0, 10), -130);
+    const codes = new Map<string, string>();
+    for (let from = 0; ; from += 1000) {
+      const { data } = await db.from("logs").select("user_id,day,waqt,code").gte("day", since).range(from, from + 999);
+      for (const l of data ?? []) codes.set(`${l.user_id}|${l.day}|${l.waqt}`, l.code ?? "");
+      if (!data || data.length < 1000) break;
+    }
+    const { data: exRows } = await db.from("excused").select("user_id,day").gte("day", since);
+    const ex = new Set((exRows ?? []).map((r) => `${r.user_id}|${r.day}`));
+    const rows = (all ?? []).map((m) => ({ ...computeStats(m as StatMember, (d, w) => codes.get(`${m.id}|${d}|${w}`) ?? "", (d) => ex.has(`${m.id}|${d}`), now), updated_at: now.toISOString() }));
+    if (rows.length) { await db.from("member_stats").upsert(rows, { onConflict: "user_id" }); statsUpdated = rows.length; }
+  }
+
   // Ping the admin about new join requests (once per request).
   let reqSent = 0;
   const { data: newReqs } = await db.from("join_requests").select("user_id,name").eq("notified", false);
@@ -153,15 +210,17 @@ Deno.serve(async (req) => {
 
   const { data: subs } = await db.from("push_subscriptions").select("user_id");
   const ids = [...new Set((subs ?? []).map((s) => s.user_id))];
-  if (!ids.length) return json({ checked: 0, sent: reqSent });
+  if (!ids.length) return json({ checked: 0, sent: reqSent, statsUpdated });
   const { data: members } = await db.from("members").select("id,name,city,method,madhab,notify_start,notify_end").in("id", ids);
   const since = addDays(now.toISOString().slice(0, 10), -2);
   const { data: logs } = await db.from("logs").select("user_id,day,waqt,code").in("user_id", ids).gte("day", since);
   const done = new Set((logs ?? []).filter((l) => (l.code ?? "").includes("f")).map((l) => `${l.user_id}|${l.day}|${l.waqt}`));
+  const { data: exNow } = await db.from("excused").select("user_id,day").in("user_id", ids).gte("day", since);
+  const excusedSet = new Set((exNow ?? []).map((r) => `${r.user_id}|${r.day}`));
 
   let sent = 0;
   for (const m of (members ?? []) as Member[]) {
-    for (const ev of dueEvents(m, now, (d, w) => done.has(`${m.id}|${d}|${w}`))) {
+    for (const ev of dueEvents(m, now, (d, w) => done.has(`${m.id}|${d}|${w}`), (d) => excusedSet.has(`${m.id}|${d}`))) {
       // Claim the event first so a slow or overlapping run never sends it twice.
       const { data: claimed, error } = await db.from("notify_sent")
         .upsert({ user_id: m.id, day: ev.day, waqt: ev.waqt, kind: ev.kind }, { onConflict: "user_id,day,waqt,kind", ignoreDuplicates: true })
@@ -172,5 +231,5 @@ Deno.serve(async (req) => {
   }
   // Keep the sent log small.
   await db.from("notify_sent").delete().lt("day", addDays(now.toISOString().slice(0, 10), -7));
-  return json({ checked: members?.length ?? 0, sent: sent + reqSent });
+  return json({ checked: members?.length ?? 0, sent: sent + reqSent, statsUpdated });
 });
