@@ -475,7 +475,7 @@ function renderSky(){
   sky.className = "sky sky-" + (late ? "night" : cls);
   sky.innerHTML = `<i class="spark" style="top:14%;right:16%;font-size:18px">✦</i><i class="spark" style="top:44%;right:8%;font-size:12px;animation-delay:.9s">✦</i><i class="spark" style="top:30%;right:32%;font-size:10px;animation-delay:1.6s">✦</i><div class="row1"><span>${esc(c.name)} · ${fmtDay(ymd(now,c.tz))}</span><span>${esc(hijri)}</span></div>
     <div class="now"><h2>${cur==="sunrise" ? (mk ? "Sunrise" : "Ishraq & Duha") : n}</h2><span class="bn">${cur==="sunrise" && mk ? "সূর্যোদয়" : bn}</span></div>
-    ${mk ? `<div class="makruh">⛔ Makruh time: don't pray until ${fmtT(mk.until,c.tz)}, ${mk.why}.${mk.asr ? " Today's Asr is still valid if you haven't prayed it." : ""}</div>` : ""}
+    ${mk ? `<div class="makruh">⛔ Makruh time: don't pray until ${fmtT(mk.until,c.tz)}, ${mk.why}.${mk.asr ? " Exception: if you haven't prayed today's Asr, pray it now. It's still valid." : ""}</div>` : ""}
     ${cur==="fajr" && !mk ? `<div class="sub">🌅 Sunrise ${fmtT(t.sunrise,c.tz)} · Ishraq from ${fmtT(new Date(+t.sunrise + SUNRISE_MIN*MIN),c.tz)}</div>` : ""}
     ${cur==="sunrise" && !mk ? `<div class="sub">☀️ Ishraq and Duha time · Dhuhr at ${fmtT(t.dhuhr,c.tz)}</div>` : ""}
     ${cur==="isha" ? `<div class="sub">${late ? "🌙 Last third of the night · best time for tahajjud" : `🌙 Tahajjud's best time starts ${fmtT(lastThird,c.tz)}`}</div>` : ""}
@@ -551,7 +551,9 @@ function viewToday(){
       <div class="nm"><h3>${p.en}</h3><span class="bn">${p.bn}</span></div>
       <div class="range num"><span>${fmtT(st,tz)} – ${fmtT(end,tz)}</span>${tag}</div>
       <div class="chips"><button class="fard ${prayed?"on":""} ${S.pop===ds+p.k+"f"?"pop":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="f" aria-pressed="${prayed}" aria-label="${p.en} fardh, ${p.f} rakat" ${dis}><span class="box" aria-hidden="true">${prayed?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</span>${prayed?"Fardh prayed":"Fardh"}<small>${p.f}</small></button>${p.chips.map(([c,l,r])=>`<button class="chip ${code.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="${c}" aria-pressed="${code.includes(c)}" ${dis}>${l}<small>${r}</small></button>`).join("")}</div>
-      ${p.k==="asr" && live && !prayed && S.dayOff===0 ? `<p class="note warn">Pray before ${fmtT(new Date(+end - SUNSET_MIN*MIN),tz)}. The last ${SUNSET_MIN} minutes before Maghrib are makruh (the sun is setting).</p>` : ""}
+      ${p.k==="asr" && live && !prayed && S.dayOff===0 ? (now < new Date(+end - SUNSET_MIN*MIN)
+        ? `<p class="note warn">Best before ${fmtT(new Date(+end - SUNSET_MIN*MIN),tz)}. The last ${SUNSET_MIN} minutes before Maghrib are makruh (the sun is setting).</p>`
+        : `<p class="note warn">Haven't prayed Asr yet? Pray it now, before Maghrib at ${fmtT(end,tz)}. Delaying this late is disliked, but today's Asr is still valid, and much better than missing it.</p>`) : ""}
       ${!future && !locked && !prayed && !live ? `<p class="note warn">Log by ${fmtShortDT(close,tz)} or it locks and your streak breaks.</p>` : ""}
     </article>`;
   }
