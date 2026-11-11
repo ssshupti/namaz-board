@@ -457,9 +457,13 @@ async function disablePush(){
 }
 async function testPush(){
   try {
-    const {error} = await S.sb.functions.invoke("notify",{body:{test:true}});
-    toast(error ? "Test failed. Ask the board owner to check the notify function." : "Test sent. It should arrive in a few seconds.");
-  } catch { toast("Test failed. Check your connection."); }
+    const {data, error} = await S.sb.functions.invoke("notify",{body:{test:true}});
+    if (!error){ toast(data?.sent ? "Test sent. It should arrive in a few seconds." : "The function ran but found no alert subscription for you. Tap Turn off, then turn alerts on again."); return; }
+    let why = error.message || "unknown error";
+    try { const r = error.context; if (r){ const t = await r.text(); why = `HTTP ${r.status}: ${t.slice(0,160)}`; } } catch {}
+    if (/Failed to send a request|FunctionsFetchError/i.test(why) || /404/.test(why)) why += " (is a function named 'notify' deployed?)";
+    toast("Test failed · " + why);
+  } catch(e){ toast("Test failed · " + (e?.message || "check your connection")); }
 }
 function alertsNudge(){
   if (!meDoc() || S.pushOn || !pushSupported && !isIOS) return "";
