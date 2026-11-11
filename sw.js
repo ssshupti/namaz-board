@@ -1,5 +1,5 @@
 // Namaz Board service worker: shows push notifications and keeps the app shell available offline.
-const CACHE = "namaz-v12";
+const CACHE = "namaz-v13";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./vendor/adhan.js", "./vendor/supabase.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/badge-96.png"];
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
@@ -10,7 +10,8 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
-  e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
+  // Always ask GitHub for the newest file (no-cache = revalidate), fall back to the saved copy when offline.
+  e.respondWith(fetch(url.href, {cache: "no-cache", credentials: "same-origin"}).then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })
     .catch(() => caches.match(e.request, {ignoreSearch: true})));
 });
 
