@@ -1,0 +1,16 @@
+{
+  "name": "Namaz Board",
+  "short_name": "Namaz",
+  "description": "Log your daily namaz, keep your streak, cheer on your friends.",
+  "start_url": "./?view=today",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF4F8",
+  "theme_color": "#FF8AB0",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Namaz Board</title>
+<meta name="description" content="Log your daily namaz, keep your streak, cheer on your friends.">
+<meta name="theme-color" content="#FF8AB0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Namaz">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gF" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:var(--rose)"/><stop offset=".55" style="stop-color:var(--gold)"/><stop offset="1" stop-color="#FFE28A"/></linearGradient>
+  <linearGradient id="gFi" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFE9A3"/><stop offset="1" stop-color="#FFF8DE"/></linearGradient>
+  <symbol id="flm" viewBox="0 0 64 76"><path d="M33 2c3 13 16 20 20 34 5 17-6 37-21 37S6 63 8 46c1-9 6-15 11-20 0 7 2 11 6 13-1-13 2-26 8-37z"/></symbol>
+</defs></svg>
+<div class="deco" aria-hidden="true"><i style="left:6%;top:22%;font-size:16px">♥</i><i style="right:7%;top:58%;font-size:20px;animation-delay:1.5s;color:var(--lav)">✦</i><i style="left:4%;top:74%;font-size:14px;animation-delay:3s;color:var(--gold)">★</i><i style="right:10%;top:88%;font-size:13px;animation-delay:2.2s">♥</i></div>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M16.5 4.5a8 8 0 1 0 3 11.5 6.5 6.5 0 1 1-3-11.5z"/></svg></span><div><h1>Namaz <em>Board</em></h1><div class="hello" id="hello">Assalamu alaikum ✨</div></div></div>
+    <div class="hdrbtns"><button class="iconbtn" id="bellBtn" data-act="bell" aria-label="Namaz alerts" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+    <button class="iconbtn" id="settingsBtn" data-act="settings" aria-label="Settings" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+  </header>
+  <section id="sky" class="sky sky-night"></section>
+  <main id="main" class="wrap" style="gap:12px"><div class="empty">Loading…</div></main>
+</div>
+<nav class="nav" aria-label="Views" hidden><div role="tablist">
+  <button role="tab" data-tab="today" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</button>
+  <button role="tab" data-tab="board" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>Board</button>
+  <button role="tab" data-tab="me" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</button>
+</div></nav>
+<div class="toast" id="toast" hidden></div>
+<canvas id="fx" hidden></canvas>
+<script src="vendor/adhan.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
