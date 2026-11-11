@@ -325,16 +325,14 @@ function viewToday(){
     html += `<article class="pr ${p.k} ${live?"current":""} ${future?"future":""}">
       <span class="orb ${p.k}" aria-hidden="true"></span>
       <div class="nm"><h3>${p.en}</h3><span class="bn">${p.bn}</span></div>
-      <button class="fard ${prayed?"on":""} ${S.pop===ds+p.k+"f"?"pop":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="f" aria-pressed="${prayed}" aria-label="${p.en} fardh, ${p.f} rakat" ${dis}>
-        ${prayed?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:`<span class="disp" style="font-size:15px;color:var(--ink)">${p.f}</span>`}Fardh</button>
       <div class="range num"><span>${fmtT(st,tz)} – ${fmtT(end,tz)}</span>${tag}</div>
-      <div class="chips">${p.chips.map(([c,l,r])=>`<button class="chip ${code.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="${c}" aria-pressed="${code.includes(c)}" ${dis}>${l}<small>${r}</small></button>`).join("")}</div>
+      <div class="chips"><button class="fard ${prayed?"on":""} ${S.pop===ds+p.k+"f"?"pop":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="f" aria-pressed="${prayed}" aria-label="${p.en} fardh, ${p.f} rakat" ${dis}><span class="box" aria-hidden="true">${prayed?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</span>${prayed?"Fardh prayed":"Fardh"}<small>${p.f}</small></button>${p.chips.map(([c,l,r])=>`<button class="chip ${code.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="${c}" aria-pressed="${code.includes(c)}" ${dis}>${l}<small>${r}</small></button>`).join("")}</div>
       ${!future && !locked && !prayed && !live ? `<p class="note warn">Log by ${fmtShortDT(close,tz)} or it locks and your streak breaks.</p>` : ""}
     </article>`;
   }
   const xc = codeOf(S.myId,ds,"x"), nf = times(cfg,addDays(ds,1)).fajr;
   html += `<article class="pr x"><span class="orb x" aria-hidden="true"></span>
-    <div class="nm"><h3>${X.en}</h3><span class="bn">${X.bn}</span></div><span></span>
+    <div class="nm"><h3>${X.en}</h3><span class="bn">${X.bn}</span></div>
     <div class="range num">Last third of the night from ${fmtT(new Date(+nf-(nf-t.maghrib)/3),tz)}</div>
     <div class="chips">${X.chips.map(([c,l])=>{ const st=chipStart(cfg,ds,"x",c); const off=!canLog||now<st||now>=new Date(+st+DAY); return `<button class="chip ${xc.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="x" data-c="${c}" aria-pressed="${xc.includes(c)}" ${off?"disabled":""}>${l}</button>`; }).join("")}</div></article>`;
   html += `</div><p class="note foot">Each namaz can be logged for 24 hours after its waqt begins. Only fardh counts toward your streak.</p>`;

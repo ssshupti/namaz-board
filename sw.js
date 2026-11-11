@@ -1,5 +1,5 @@
 // Namaz Board service worker: shows push notifications and keeps the app shell available offline.
-const CACHE = "namaz-v5";
+const CACHE = "namaz-v6";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./vendor/adhan.js", "./vendor/supabase.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/badge-96.png"];
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
