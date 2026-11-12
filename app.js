@@ -725,7 +725,7 @@ function viewBoard(){
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
-  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite">Code <b data-notr>${g.code}</b> ⧉</button></div>
+  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite link">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);
@@ -1224,7 +1224,13 @@ document.addEventListener("click", async e => {
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
   else if (a==="ginvite"){
     const link = b.dataset.link, text = `Join my Namaz Board group 🌸 ${link} (code ${b.dataset.code})`;
-    try { if (navigator.share) { await navigator.share({title:"Namaz Board", text, url:link}); return; } } catch { return; }
+    // Phones: the share sheet (WhatsApp, Messenger…). Computers: just copy, since their share menus rarely have chat apps.
+    const phone = matchMedia("(pointer: coarse)").matches;
+    if (phone && navigator.share){ try { await navigator.share({title:"Namaz Board", text}); } catch {} return; }
+    try { await navigator.clipboard.writeText(text); toast("Invite link copied. Paste it to your friends."); } catch { toast(`Group code: ${b.dataset.code}`); }
+  }
+  else if (a==="gcopy"){
+    const text = `Join my Namaz Board group 🌸 ${b.dataset.link} (code ${b.dataset.code})`;
     try { await navigator.clipboard.writeText(text); toast("Invite link copied. Paste it to your friends."); } catch { toast(`Group code: ${b.dataset.code}`); }
   }
   else if (a==="gkick"){
