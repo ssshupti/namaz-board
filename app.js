@@ -972,7 +972,8 @@ let installEvt = null;
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; scheduleRender(); });
 addEventListener("appinstalled", () => { installEvt = null; toast("Installed 🎉 Open Namaz Board from your home screen."); scheduleRender(); });
 function installNudge(){
-  if (!installEvt || standalone) return "";
+  // Phones only: on computers the browser's address bar already has an install icon.
+  if (!installEvt || standalone || !matchMedia("(pointer: coarse)").matches) return "";
   try { if (localStorage.getItem("nb-install-hide")==="1") return ""; } catch {}
   return `<div class="notice"><span>📲 <b>Install Namaz Board</b> as an app on this phone.</span><div class="btns"><button class="primary" data-act="install">Install</button><button class="ghost" data-act="hideinstall">Later</button></div></div>`;
 }
