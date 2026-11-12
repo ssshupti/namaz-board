@@ -448,3 +448,5 @@ html[lang="bn"] .bn{display:none}
 .notice.tzwarn{flex-direction:column;align-items:stretch;gap:10px}
 .notice.tzwarn .btns{flex-wrap:wrap;gap:8px}
 .notice.tzwarn .btns button{flex:1 1 auto}
+.btnlink{display:inline-block;text-decoration:none;text-align:center}
+.notice.inapp{flex-direction:column;align-items:stretch;gap:10px;border:2px solid var(--gold)}
