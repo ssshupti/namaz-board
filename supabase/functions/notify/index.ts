@@ -105,7 +105,7 @@ const FARDH = [
 const WINDOW_MS = 10 * 60e3;      // cron can run late; send if we're within 10 min of the moment
 const END_LEAD_MS = 30 * 60e3;    // streak-saver goes 30 min before the waqt ends
 
-type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null };
+type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null };
 type Times = Record<string, Date>;
 
 const ymd = (d: Date, tz: string) =>
@@ -140,8 +140,14 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 /** Which notifications are due right now for this member (pure; tested). */
 export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
   const cfg = cfgOf(m), tz = loc(cfg).tz;
-  const out: { day: string; waqt: string; kind: "start" | "end"; title: string; body: string }[] = [];
+  const out: { day: string; waqt: string; kind: "start" | "end" | "jumuah"; title: string; body: string }[] = [];
   const local = ymd(now, tz);
+  // Jumu'ah (opt-in): Fridays, 1 hour before Dhuhr.
+  if (m.notify_jumuah && new Date(local + "T12:00:00Z").getUTCDay() === 5 && !excused(local)) {
+    const dz = times(cfg, local).dhuhr, at = new Date(+dz - 60 * 60e3);
+    if (now >= at && +now - +at < WINDOW_MS)
+      out.push({ day: local, waqt: "jumuah", kind: "jumuah", title: "🕌 Jumu'ah Mubarak", body: `Dhuhr / Jumu'ah at ${fmtT(dz, tz)}. Head out early, and read Surah Al-Kahf today 🌸` });
+  }
   for (const day of [addDays(local, -1), local]) {
     if (excused(day)) continue; // excused days get no alerts
     const t = times(cfg, day), next = times(cfg, addDays(day, 1));
@@ -178,6 +184,15 @@ function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
   return now < times(cfg, d).fajr ? addDays(d, -1) : d;
 }
 /** Same rules as the app: done / miss / open / excused / not-joined. */
+/** Is it currently inside the member's quiet hours (in their own time zone)? */
+export function inQuiet(m: Partial<Member>, now: Date) {
+  if (m.quiet_start == null || m.quiet_end == null || m.quiet_start === m.quiet_end) return false;
+  const tz = loc(cfgOf(m)).tz;
+  const [h, mi] = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now).split(":").map(Number);
+  const cur = h * 60 + mi;
+  return m.quiet_start < m.quiet_end ? cur >= m.quiet_start && cur < m.quiet_end : cur >= m.quiet_start || cur < m.quiet_end;
+}
+
 export function computeStats(m: StatMember, code: (day: string, waqt: string) => string, isEx: (day: string) => boolean, now: Date) {
   const cfg = cfgOf(m), today = appDay(cfg, now);
   const allF = (d: string) => FARDH.every((p) => code(d, p.k).includes("f"));
@@ -323,6 +338,7 @@ Deno.serve(async (req) => {
 
   let sent = 0;
   for (const m of (members ?? []) as Member[]) {
+    if (inQuiet(m, now)) continue; // quiet hours: skip (the event isn't marked sent, but its 10-minute window will have passed)
     for (const ev of dueEvents(m, now, (d, w) => done.has(`${m.id}|${d}|${w}`), (d) => excusedSet.has(`${m.id}|${d}`))) {
       // Claim the event first so a slow or overlapping run never sends it twice.
       const { data: claimed, error } = await db.from("notify_sent")

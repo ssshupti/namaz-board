@@ -234,6 +234,18 @@ function bestBadge(id){
   for (let k=4; k>=1; k--) if (h[k-1] > 0) return miniHeart(k, h[k-1]);
   return miniFlame(0);
 }
+/* Milestone badges for the all-5 streak. */
+const MILESTONES = [
+  {n:7,   e:"🌱", t:"One week",  bn:"এক সপ্তাহ"},
+  {n:40,  e:"🌙", t:"40 days",   bn:"৪০ দিন"},
+  {n:100, e:"💯", t:"100 days",  bn:"১০০ দিন"},
+  {n:365, e:"🏆", t:"One year",  bn:"এক বছর"}
+];
+function topBadge(id){
+  const best = id===S.myId ? bestStreak(id) : (S.stats[id]?.best || 0);
+  return [...MILESTONES].reverse().find(x => best >= x.n) || null;
+}
+const badgeChip = id => { const b = topBadge(id); return b ? `<span class="mbadge" title="${b.t} streak badge">${b.e}</span>` : ""; };
 function bestStreak(id, now=new Date()){
   const m = S.members[id]; if (!m?.joined) return streakOf(id,now);
   const today = appDay(cfgOf(m),now); let best=0, run=0;
@@ -302,7 +314,7 @@ function grade(pct){
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
   return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
-    notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
+    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, quietStart:r.quiet_start, quietEnd:r.quiet_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
   if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
@@ -328,6 +340,8 @@ async function loadAll(){
   await loadGroups();
   const {data:ex} = await S.sb.from("excused").select("day").eq("user_id", S.myId);
   S.excused = new Set((ex||[]).map(r => r.day));
+  const {data:qz, error:qe} = await S.sb.from("qaza").select("waqt,owed,done").eq("user_id", S.myId);
+  S.qazaReady = !qe; S.qaza = {}; for (const r of qz||[]) S.qaza[r.waqt] = {owed:r.owed, done:r.done};
   const since = addDays(new Date().toISOString().slice(0,10), -HISTORY_DAYS);
   for (let from=0; ; from+=1000){
     const {data, error} = await S.sb.from("logs").select("user_id,day,waqt,code,updated_at").gte("day",since).order("day").range(from, from+999);
@@ -533,13 +547,14 @@ function friendsStrip(){
   return `<section class="friends"><div class="sechead"><h3>Everyone's streaks</h3><p>Ring = today's fardh</p></div><div class="fstrip">${rows.map(r=>`
     <button class="fr" data-act="openfr" data-id="${esc(r.id)}" aria-label="${esc(r.m.name||"Someone")}: ${r.s}-day streak">
       <span class="ring ${r.seeDay?"":"plain"} ${r.seeDay&&r.n===5?"full":""}" style="--p:${r.n*20}%">${avatar(r.id,r.m.name)}${r.seeDay?`<span class="cnt num">${r.n}/5</span>`:""}</span>
-      <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}</span>${bestBadge(r.id)}</button>`).join("")}</div></section>`;
+      <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}${badgeChip(r.id)}</span>${bestBadge(r.id)}</button>`).join("")}</div></section>`;
 }
 
 /* ---------- views ---------- */
 function viewToday(){
   const m = meDoc(), cfg = cfgOf(m), tz = loc(cfg).tz, now = new Date();
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
+  const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
   let html = requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
@@ -551,9 +566,10 @@ function viewToday(){
     const dis = (!canLog || future || locked) ? "disabled" : "";
     html += `<article class="pr ${p.k} ${live?"current":""} ${future?"future":""}">
       <span class="orb ${p.k}" aria-hidden="true"></span>
-      <div class="nm"><h3>${p.en}</h3><span class="bn">${p.bn}</span></div>
+      <div class="nm"><h3>${isFri && p.k==="dhuhr" ? "Dhuhr / Jumu'ah" : p.en}</h3><span class="bn">${isFri && p.k==="dhuhr" ? "যোহর / জুমা" : p.bn}</span></div>
       <div class="range num"><span>${fmtT(st,tz)} – ${fmtT(end,tz)}</span>${tag}</div>
       <div class="chips"><button class="fard ${prayed?"on":""} ${S.pop===ds+p.k+"f"?"pop":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="f" aria-pressed="${prayed}" aria-label="${p.en} fardh, ${p.f} rakat" ${dis}><span class="box" aria-hidden="true">${prayed?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</span>${prayed?"Fardh prayed":"Fardh"}<small>${p.f}</small></button>${p.chips.map(([c,l,r])=>`<button class="chip ${code.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="${c}" aria-pressed="${code.includes(c)}" ${dis}>${l}<small>${r}</small></button>`).join("")}</div>
+      ${isFri && p.k==="dhuhr" && !prayed ? `<p class="note">Prayed Jumu'ah? Tap Fardh, it counts for Dhuhr.</p>` : ""}
       ${p.k==="asr" && live && !prayed && S.dayOff===0 ? (now < new Date(+end - SUNSET_MIN*MIN)
         ? `<p class="note warn">Best before ${fmtT(new Date(+end - SUNSET_MIN*MIN),tz)}. The last ${SUNSET_MIN} minutes before Maghrib are makruh (the sun is setting).</p>`
         : `<p class="note warn">Haven't prayed Asr yet? Pray it now, before Maghrib at ${fmtT(end,tz)}. Delaying this late is disliked, but today's Asr is still valid, and much better than missing it.</p>`) : ""}
@@ -615,7 +631,7 @@ function leaderboard(ids, full){
     const canDetail = r.id===S.myId || full;
     html += `<div class="person"><button data-act="open" data-id="${esc(r.id)}" aria-expanded="${S.open===r.id}">
       <span class="rank">${i+1}</span>${avatar(r.id,r.m.name)}
-      <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${bestBadge(r.id)}</span>
+      <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${bestBadge(r.id)}${badgeChip(r.id)}</span>
         <span class="bar"><i style="width:${r.s.pct??0}%"></i></span>
         <span class="pstats num"><span>${r.s.done}/${r.s.due} fardh</span>${showX && !(r.s.ptsMonthOnly) ?`<span>${r.s.pts} pts</span>`:""}${canDetail && r.s.dots?`<span class="dots" title="Today's fardh">${r.s.dots.map(d=>`<i class="${d}"></i>`).join("")}</span>`:""}</span></span>
       <span class="grade ${low?"low":""}">${grade(r.s.pct)}</span></button>
@@ -687,7 +703,32 @@ function viewMe(){
   const s7 = memberSummary(S.myId,"7"), sm = memberSummary(S.myId,"month"), best = bestStreak(S.myId);
   return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${esc(loc(cfgOf(m)).name)} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
     <div class="tiles num"><div class="tile"><b>${s7.pct==null?"–":Math.round(s7.pct)+"%"}</b><span>Fardh, 7 days</span></div><div class="tile"><b>${best}</b><span>Best streak</span></div><div class="tile"><b>${sm.pts}</b><span>Points this month</span></div></div>
-    ${gradesheet(S.myId)}</div>`;
+    ${gradesheet(S.myId)}</div>` + badgeShelf(best) + qazaPanel();
+}
+function badgeShelf(best){
+  return `<section class="panel"><h3>Badges</h3><p>Earned by praying all 5 fardh for days in a row. Your best streak: <b>${best}</b>.</p>
+    <div class="shelf">${MILESTONES.map(x => `<div class="sbadge ${best>=x.n?"on":""}"><span>${x.e}</span><b>${x.t}</b><small>${best>=x.n ? "Earned" : `${x.n - best} to go`}</small></div>`).join("")}</div></section>`;
+}
+const QAZA_W = [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"],["witr","Witr"]];
+function qazaPanel(){
+  if (!S.qazaReady) return "";
+  const rows = QAZA_W.map(([k,l]) => { const q = S.qaza[k] || {owed:0, done:0}, left = Math.max(0, q.owed - q.done);
+    return `<div class="qrow"><b>${l}</b>
+      <label class="qown">Missed<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
+      <span class="qleft num">${left ? `${left} left` : q.owed ? "All made up ✨" : "–"}</span>
+      <button class="ghost" data-act="qdone" data-k="${k}" ${left?"":"disabled"}>✓ Made one up</button></div>`; }).join("");
+  const owed = QAZA_W.reduce((a,[k]) => a + (S.qaza[k]?.owed||0), 0), done = QAZA_W.reduce((a,[k]) => a + Math.min(S.qaza[k]?.owed||0, S.qaza[k]?.done||0), 0);
+  return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Keep count of missed prayers you're making up. Only you can see this.</p>
+    ${owed ? `<div class="bar"><i style="width:${(done/owed*100).toFixed(1)}%"></i></div><p class="note num">${done} of ${owed} made up</p>` : ""}
+    <div class="qlist">${rows}</div>
+    <p class="note">Enter how many of each you owe, then tap <b>Made one up</b> each time you pray one.</p></section>`;
+}
+async function saveQaza(k, patch){
+  const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch};
+  q.owed = Math.max(0, Math.min(100000, q.owed|0)); q.done = Math.max(0, Math.min(q.owed, q.done|0));
+  const {error} = await S.sb.from("qaza").upsert({user_id:S.myId, waqt:k, owed:q.owed, done:q.done, updated_at:new Date().toISOString()}, {onConflict:"user_id,waqt"});
+  if (error){ toast("Couldn't save that."); return false; }
+  S.qaza[k] = q; return true;
 }
 function cityOptions(cfg){
   const groups = {};
@@ -789,6 +830,8 @@ function alertsNudge(){
   try { if (localStorage.getItem("nb-nudge-hide")==="1") return ""; } catch {}
   return `<div class="notice"><span>🔔 <b>Get a ping for every namaz</b>, even when your phone is locked.</span><div class="btns"><button class="primary" data-act="tab" data-tab="alerts">Set up</button><button class="ghost" data-act="hidenudge">Later</button></div></div>`;
 }
+const mins2hm = v => `${String(Math.floor(v/60)).padStart(2,"0")}:${String(v%60).padStart(2,"0")}`;
+const hm2mins = s => { const [h,m] = String(s||"0:0").split(":").map(Number); return (h*60 + m) % 1440; };
 function viewAlerts(){
   const m = meDoc();
   let body;
@@ -809,7 +852,11 @@ function viewAlerts(){
     <section class="panel"><h3>What to send me</h3>
       <label class="tog"><input type="checkbox" id="n-start" data-act="ntoggle" ${m.notifyStart!==false?"checked":""}><span><b>When each waqt starts</b><br><small>“🌸 It's Asr time · ends 5:14 pm”</small></span></label>
       <label class="tog"><input type="checkbox" id="n-end" data-act="ntoggle" ${m.notifyEnd!==false?"checked":""}><span><b>Streak saver</b><br><small>30 min before a waqt ends, only if you haven't logged its fardh</small></span></label>
-      <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>`;
+      <label class="tog"><input type="checkbox" id="n-jumuah" data-act="ntoggle" ${m.notifyJumuah?"checked":""}><span><b>Jumu'ah reminder</b><br><small>On Fridays, 1 hour before Dhuhr, with a nudge to read Surah Al-Kahf</small></span></label>
+      <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>
+    <section class="panel"><h3>Quiet hours</h3><p>No alerts during these hours, for example while you sleep. Alerts for Fajr may be skipped if they fall inside.</p>
+      <label class="tog"><input type="checkbox" id="q-on" data-act="ntoggle" ${m.quietStart!=null?"checked":""}><span><b>Use quiet hours</b></span></label>
+      <div class="grid2"><label class="f">From<input type="time" id="q-from" data-act="ntoggle" value="${mins2hm(m.quietStart ?? 1380)}"></label><label class="f">Until<input type="time" id="q-to" data-act="ntoggle" value="${mins2hm(m.quietEnd ?? 360)}"></label></div></section>`;
 }
 
 /* ---------- auth screens ---------- */
@@ -834,6 +881,14 @@ function viewNotInvited(){
     <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
     <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">Use another account</button></div>
     <p class="note">Signed in as ${esc(S.email)}</p></form>`;
+}
+
+function showMilestone(ms){
+  let el = $("tour"); if (!el){ el = document.createElement("div"); el.id = "tour"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
+  el.innerHTML = `<div class="tcard milestone"><div class="bigbadge">${ms.e}</div><h3>${ms.t} streak!</h3>
+    <p>MashaAllah! You've prayed all 5 fardh for <b>${ms.n} days</b> in a row. Your new badge now shows next to your name.</p>
+    <div class="btns"><button class="primary" data-act="tourdone">Alhamdulillah ✨</button></div></div>`;
+  el.querySelector(".primary")?.focus();
 }
 
 /* ---------- welcome tour ---------- */
@@ -948,6 +1003,7 @@ document.addEventListener("click", async e => {
     try { localStorage.clear(); } catch {}
     await S.sb.auth.signOut(); toast("Your account and logs were deleted."); setTimeout(() => location.reload(), 1200);
   }
+  else if (a==="qdone"){ const k = b.dataset.k, q = S.qaza[k]; if (q && await saveQaza(k, {done:q.done+1})){ render(); toast(Math.max(0,q.owed-q.done-1) ? "Made up ✓ MashaAllah" : "All made up ✨ MashaAllah"); } }
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
   else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
@@ -1033,7 +1089,9 @@ document.addEventListener("click", async e => {
     render();
     if (c==="f" && before!=="done" && dayState(S.myId,ds,now).s==="done"){
       const n = streakOf(S.myId,now); celebrate();
-      toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done.` : "All 5 fardh done for the day.");
+      const ms = MILESTONES.find(x => x.n === n && n > sBefore);
+      if (ms){ setTimeout(celebrate, 700); showMilestone(ms); }
+      else toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done.` : "All 5 fardh done for the day.");
     }
   }
 });
@@ -1043,10 +1101,16 @@ document.addEventListener("change", e => {
   if (e.target.value !== "custom"){ S.geo = null; const c = CITIES[e.target.value]; if (c && $("f-method")) $("f-method").value = c.method; }
 });
 document.addEventListener("change", async e => {
+  if (e.target.dataset.qown){ const k = e.target.dataset.qown; if (await saveQaza(k, {owed: Number(e.target.value)||0})) render(); }
+});
+document.addEventListener("change", async e => {
   if (e.target.dataset.act !== "ntoggle") return;
-  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked};
+  const on = $("q-on")?.checked;
+  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked, notify_jumuah:$("n-jumuah").checked,
+    quiet_start: on ? hm2mins($("q-from").value) : null, quiet_end: on ? hm2mins($("q-to").value) : null};
   const {error} = await S.sb.from("members").update(patch).eq("id", S.myId);
-  if (error) toast("Couldn't save that setting."); else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end}); toast("Saved"); }
+  if (error) toast(/column/i.test(error.message||"") ? "This setting needs the latest database update." : "Couldn't save that setting.");
+  else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end, notifyJumuah:patch.notify_jumuah, quietStart:patch.quiet_start, quietEnd:patch.quiet_end}); toast("Saved"); }
 });
 document.addEventListener("submit", async e => {
   e.preventDefault();

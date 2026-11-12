@@ -379,3 +379,21 @@ img{max-width:100%}
 .locrow .note{flex:1 1 180px}
 .sky .makruh{margin-top:6px;background:rgba(255,255,255,.88);color:#B4234F;border-radius:14px;padding:6px 10px;font-size:13px;font-weight:800;line-height:1.35}
 a.ghost{text-decoration:none;color:var(--ink);display:inline-flex;align-items:center}
+/* milestones */
+.mbadge{font-size:14px;margin-left:2px}
+.shelf{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sbadge{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--off);border-radius:18px;padding:10px 4px;text-align:center;opacity:.55;filter:grayscale(1)}
+.sbadge.on{opacity:1;filter:none;background:color-mix(in srgb,var(--gold) 22%,var(--surface))}
+.sbadge span{font-size:28px}
+.sbadge b{font-size:12.5px;line-height:1.2}
+.sbadge small{font-size:11px;color:var(--muted);font-weight:700}
+.bigbadge{font-size:72px;line-height:1;animation:tpop .6s cubic-bezier(.3,1.8,.5,1)}
+/* qaza */
+.qlist{display:flex;flex-direction:column;gap:8px}
+.qrow{display:grid;grid-template-columns:72px 1fr auto;gap:6px 10px;align-items:center;background:var(--off);border-radius:18px;padding:10px 12px}
+.qrow b{font-size:15px}
+.qown{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.qown input{width:76px;font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:5px 8px}
+.qleft{font-size:13px;font-weight:800;color:var(--warn);text-align:right}
+.qrow .ghost{grid-column:1/-1;justify-self:start;padding:6px 14px}
+.qrow .ghost:disabled{opacity:.35}
