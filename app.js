@@ -174,6 +174,8 @@ const isPub = id => S.members[id]?.isPublic !== false;
 const pubIds = () => Object.keys(S.members).filter(isPub);
 const coIds = () => [...new Set([S.myId, ...pubIds(), ...S.groups.flatMap(g => groupIds(g.id))])].filter(id => S.members[id]);
 const fullIds = () => new Set(S.groups.filter(g => g.mode==="full").flatMap(g => groupIds(g.id)));
+/* Whose today's rings you can see: full-details group mates and public members. */
+const seeIds = () => new Set([...fullIds(), ...pubIds()]);
 const curGroup = () => S.gid==="all" ? null : (S.groups.find(g => g.id===S.gid) || null);
 function codeOf(id, ds, k){
   if (id===S.myId && S.overlay[ds] && k in S.overlay[ds]) return S.overlay[ds][k];
@@ -250,10 +252,10 @@ function memberSummary(id, period, now=new Date()){
 }
 function summaryFor(id, period){
   if (id===S.myId){ const s = memberSummary(id, period); s.full = true; return s; }
-  const st = S.stats[id] || {}, full = fullIds().has(id);
+  const st = S.stats[id] || {}, full = fullIds().has(id), see = full || isPub(id);
   const due = period==="7" ? st.wk_due||0 : period==="all" ? st.f_due||0 : st.mo_due||0, done = period==="7" ? st.wk_done||0 : period==="all" ? st.f_done||0 : st.mo_done||0;
   let dots = null;
-  if (full){ const cfg = cfgOf(S.members[id]), today = appDay(cfg), now = new Date(); dots = P.map(p => codeOf(id,today,p.k).includes("f") ? "d" : (now >= waqtEnd(cfg,today,p.k) ? "m" : "")); }
+  if (see){ const cfg = cfgOf(S.members[id]), today = appDay(cfg), now = new Date(); dots = P.map(p => codeOf(id,today,p.k).includes("f") ? "d" : (now >= waqtEnd(cfg,today,p.k) ? "m" : "")); }
   return {due, done, pts: st.mo_pts||0, ptsMonthOnly: period!=="month", streak: st.streak||0, pct: due ? done/due*100 : null, dots, full};
 }
 function myStats(now=new Date()){
@@ -516,14 +518,19 @@ function visPill(){
   const label = sure ? (pub ? "Make private? Tap again" : "Make public? Tap again") : (pub ? "🌍 Public" : "🔒 Private");
   return `<div class="pills"><button class="vispill ${sure?"sure":""}" data-act="vis" title="${pub?"You're on the Everyone board":"Hidden from the Everyone board. Your groups still see you"}">${label}</button><button class="vispill" data-act="tab" data-tab="board">👥 ${n} group${n===1?"":"s"}</button></div>`;
 }
+/* Home: you + public members. A group's rings show inside that group on the Board. */
 function friendsStrip(){
-  const ids = coIds(); if (ids.length < 2) return "";
-  const now = new Date(), full = fullIds();
-  const rows = ids.map(id => { const m=S.members[id], cfg=cfgOf(m), today=appDay(cfg,now), seeDay = id===S.myId || full.has(id);
+  const ids = [...new Set([S.myId, ...pubIds()])].filter(id => S.members[id]);
+  if (ids.length < 2) return "";
+  return ringStrip(ids, "🌍 Everyone today", "all");
+}
+function ringStrip(ids, title, gid){
+  const now = new Date(), see = seeIds();
+  const rows = ids.map(id => { const m=S.members[id], cfg=cfgOf(m), today=appDay(cfg,now), seeDay = id===S.myId || see.has(id);
     return {id, m, seeDay, n: seeDay ? P.filter(p=>codeOf(id,today,p.k).includes("f")).length : 0, s:streakFor(id,now)}; })
-    .sort((a,b)=> (b.id===S.myId)-(a.id===S.myId) || b.s-a.s || b.n-a.n);
-  return `<section class="friends"><div class="sechead"><h3>Everyone's streaks</h3><p>Ring = today's fardh</p></div><div class="fstrip">${rows.map(r=>`
-    <button class="fr" data-act="openfr" data-id="${esc(r.id)}" aria-label="${esc(r.m.name||"Someone")}: ${r.s}-day streak">
+    .sort((a,b)=> (b.id===S.myId)-(a.id===S.myId) || b.n-a.n || b.s-a.s);
+  return `<section class="friends"><div class="sechead"><h3>${title}</h3><p>Ring = today's fardh</p></div><div class="fstrip">${rows.map(r=>`
+    <button class="fr" data-act="openfr" data-gid="${esc(gid)}" data-id="${esc(r.id)}" aria-label="${esc(r.m.name||"Someone")}: ${r.n} of 5 fardh today">
       <span class="ring ${r.seeDay?"":"plain"} ${r.seeDay&&r.n===5?"full":""}" style="--p:${r.n*20}%">${avatar(r.id,r.m.name)}${r.seeDay?`<span class="cnt num">${r.n}/5</span>`:""}</span>
       <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}${badgeChip(r.id)}</span>${bestBadge(r.id)}</button>`).join("")}</div></section>`;
 }
@@ -584,12 +591,12 @@ function viewBoard(){
   const sq = groupStreak(g.id);
   if (sq !== null) html += `<section class="squad"><div class="flame ${sq?"lit":""}">${flameSvg(true)}<span class="n num">${sq}</span></div>
     <div><h3>Group streak · ${sq} day${sq===1?"":"s"}</h3><p>${sq ? "As long as the shortest streak in the group. Keep each other going!" : "Starts when everyone has a streak going."}</p></div></section>`;
-  return html + leaderboard(ids, g.mode==="full");
+  return html + ringStrip(ids, "Today in " + esc(g.name), g.id) + leaderboard(ids, g.mode==="full");
 }
 function everyoneBoard(){
   const ids = pubIds();
   const note = isPub(S.myId) ? "" : `<div class="notice"><span>🔒 <b>You're private</b>, so you're hidden from this board. Your groups still see your record.</span><button class="ghost" data-act="vis">Go public</button></div>`;
-  let html = note + `<section class="ghead"><div><h3>🌍 Everyone</h3><p>${ids.length} public member${ids.length===1?"":"s"} · 🔥 Streaks and grades</p></div></section>`;
+  let html = note + `<section class="ghead"><div><h3>🌍 Everyone</h3><p>${ids.length} public member${ids.length===1?"":"s"} · 🔥 Streaks and today's rings</p></div></section>`;
   if (!ids.length) return html + `<div class="panel empty">Nobody is public yet.</div>`;
   return html + leaderboard(ids, false);
 }
@@ -611,7 +618,7 @@ function leaderboard(ids, full){
       <span class="rank">${i+1}</span>${avatar(r.id,r.m.name)}
       <span style="min-width:0"><span class="pname">${esc(r.m.name||"Someone")}${r.id===S.myId?'<span class="you">you</span>':""}${bestBadge(r.id)}${badgeChip(r.id)}</span>
         <span class="bar"><i style="width:${r.s.pct??0}%"></i></span>
-        <span class="pstats num"><span>${r.s.done}/${r.s.due} fardh</span>${showX && !(r.s.ptsMonthOnly) && S.period!=="all" ?`<span>${r.s.pts} pts</span>`:""}${canDetail && r.s.dots?`<span class="dots" title="Today's fardh">${r.s.dots.map(d=>`<i class="${d}"></i>`).join("")}</span>`:""}</span></span>
+        <span class="pstats num"><span>${r.s.done}/${r.s.due} fardh</span>${showX && !(r.s.ptsMonthOnly) && S.period!=="all" ?`<span>${r.s.pts} pts</span>`:""}${r.s.dots?`<span class="dots" title="Today's fardh">${r.s.dots.map(d=>`<i class="${d}"></i>`).join("")}</span>`:""}</span></span>
       <span class="grade ${low?"low":""}">${grade(r.s.pct)}</span></button>
       ${S.open===r.id ? `<div class="detail">${canDetail ? gradesheet(r.id) : `<p class="note">Only streaks and grades are shared here, so daily details stay private.</p>`}</div>` : ""}</div>`;
   });
@@ -752,7 +759,7 @@ function viewSettings(){
     <div class="locrow"><button type="button" class="ghost" data-act="geo">📍 Use my location</button><span class="note" id="geoNote">${cfg.city==="custom" ? `Using ${esc(cfg.place)} (rounded to about 10 km).` : "Optional. Exact times for where you are. Your position is rounded to about 10 km."}</span></div>
     <p class="note">Picking a city also picks the usual method there. You can still change it.</p>
     <fieldset class="vis"><legend>Everyone board</legend>
-      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak and grade. My groups see me too.</small></span></label>
+      <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak, grade and today's fardh. My groups see me too.</small></span></label>
       <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>I'm hidden from the Everyone board. My groups still see my record.</small></span></label>
     </fieldset>
     <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud in full-details groups</label>
@@ -912,7 +919,7 @@ function tourSteps(){
     {art:`<div class="tart"><span class="tflame">${flameSvg(true)}</span></div>`, h:"Keep your streaks",
      p:"🔥 grows each day you pray <b>all 5</b> fardh. Below it, <b>6/7</b> means 6 of the 7 fardh since you joined, so every single fardh counts. Travelling, ill or can't pray? Tap <b>Excuse this day</b>: your streak pauses, and <b>only you</b> can see it."},
     {art:`<div class="tart">${["🌍","👥","🔒"].map(e=>`<span class="temo">${e}</span>`).join("")}</div>`, h:"Friends & groups",
-     p:"<b>🌍 Public</b> puts your streak and grade on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share with just the people you choose: <i>streaks only</i> or <i>full details</i>. Invite friends from the Board tab."}
+     p:"<b>🌍 Public</b> puts your streak, grade and today's fardh on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share with just the people you choose: <i>streaks only</i> or <i>full details</i>. Invite friends from the Board tab."}
   ];
 }
 function renderTour(){
@@ -1023,7 +1030,7 @@ document.addEventListener("click", async e => {
     location.reload();
   }
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
-  else if (a==="openfr"){ if (b.dataset.id===S.myId) S.view = "me"; else { S.view = "board"; const g = S.groups.find(x => groupIds(x.id).includes(b.dataset.id)); if (g) S.gid = g.id; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
+  else if (a==="openfr"){ if (b.dataset.id===S.myId) S.view = "me"; else { S.view = "board"; S.gid = b.dataset.gid || "all"; S.gform = null; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
   else if (a==="vis"){
     if (!S.confirmVis){ S.confirmVis = true; render(); clearTimeout(S.visT); S.visT = setTimeout(()=>{ S.confirmVis = false; render(); }, 4000); return; }
     clearTimeout(S.visT); S.confirmVis = false;

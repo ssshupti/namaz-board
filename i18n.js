@@ -74,11 +74,11 @@ const DICT = {
   "Finding you…":"খুঁজছি…","Location wasn't shared. Pick your city from the list instead.":"লোকেশন শেয়ার করা হয়নি। তালিকা থেকে শহর বেছে নিন।",
   "Picking a city also picks the usual method there. You can still change it.":"শহর বাছলে সেখানকার প্রচলিত পদ্ধতিও বাছা হয়। চাইলে বদলাতে পারেন।",
   "Everyone board":"সবার বোর্ড",
-  "I'm on the Everyone board: all Namaz Board users see my streak and grade. My groups see me too.":"আমি সবার বোর্ডে আছি: সব ব্যবহারকারী আমার স্ট্রিক ও গ্রেড দেখে। আমার গ্রুপও দেখে।",
+  "I'm on the Everyone board: all Namaz Board users see my streak, grade and today's fardh. My groups see me too.":"আমি সবার বোর্ডে আছি: সব ব্যবহারকারী আমার স্ট্রিক, গ্রেড ও আজকের ফরজ দেখে। আমার গ্রুপও দেখে।",
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud in full-details groups":"সম্পূর্ণ বিস্তারিত গ্রুপে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","Looking up the group…":"গ্রুপ খোঁজা হচ্ছে…","No group has that code. Check it with your friend.":"এই কোডে কোনো গ্রুপ নেই। বন্ধুর কাছ থেকে আবার দেখে নিন।",
+  "Language":"ভাষা","🌍 Everyone today":"🌍 আজ সবাই","Looking up the group…":"গ্রুপ খোঁজা হচ্ছে…","No group has that code. Check it with your friend.":"এই কোডে কোনো গ্রুপ নেই। বন্ধুর কাছ থেকে আবার দেখে নিন।",
   "Code":"কোড","👥 You're invited to":"👥 আপনাকে আমন্ত্রণ জানানো হয়েছে","Join the board first, then you'll be asked to join the group.":"আগে বোর্ডে যোগ দিন, তারপর গ্রুপে যোগ দিতে বলা হবে।",
   "No group has that code. Check it and try again.":"এই কোডে কোনো গ্রুপ নেই। দেখে আবার চেষ্টা করুন।","Alerts on your phone follow this too.":"ফোনের অ্যালার্টও এই ভাষায় আসবে।",
   // alerts
@@ -125,6 +125,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Today in (.+)$/, (_,n) => `আজ ${n}-এ`],
+  [/^(\d+) public members? · 🔥 Streaks and today's rings$/, (_,n) => `${n} জন পাবলিক সদস্য · 🔥 স্ট্রিক ও আজকের রিং`],
   [/^Join (.+)$/, (_,n) => `${n}-এ যোগ দিন`],
   [/^(\d+) members? · (📖 Full details|🔥 Streaks only)$/, (_,n,m) => `${n} জন সদস্য · ${m.startsWith("📖")?"📖 সম্পূর্ণ বিস্তারিত":"🔥 শুধু স্ট্রিক"}`],
   [/^Every fardh so far ✨ (\d+)%$/, (_,p) => `এ পর্যন্ত সব ফরজ ✨ ${p}%`],
