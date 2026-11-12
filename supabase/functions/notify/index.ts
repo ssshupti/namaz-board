@@ -245,6 +245,10 @@ export function computeStats(m: StatMember, code: (day: string, waqt: string) =>
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, x-client-info, apikey, content-type" } });
 
+// Made-up addresses that can never receive mail. The second is a fallback if the first is ever rejected.
+export const CODE_DOMAINS = ["namaz-board.invalid", "namaz-board.example.com"];
+export const formatCode = (handle: string, pw: string) => `NB-${handle.slice(0, 4)}-${handle.slice(4, 8)}-${pw.slice(0, 4)}-${pw.slice(4, 8)}-${pw.slice(8, 12)}`;
+
 /* Nudge templates. Keep in sync with NUDGES in app.js. {w} = the namaz name. */
 export const NUDGE_TEXT: Record<string, [string, string]> = {
   n1: ["did u pray {w} yet?","{w} porsos?"],
@@ -311,8 +315,33 @@ Deno.serve(async (req) => {
     return sent;
   };
 
-  let payload: { test?: boolean } = {};
+  let payload: { test?: boolean; action?: string } = {};
   try { payload = await req.json(); } catch { /* empty body from cron */ }
+
+  // Accounts without email: a made-up address + password, both inside one backup code.
+  //   newaccount: create one (no sign-in needed). newcode: give the signed-in code account a fresh code.
+  if (payload.action === "newaccount" || payload.action === "newcode") {
+    const ABC = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+    const rnd = (n: number) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => ABC[b % ABC.length]).join("");
+    const pw = rnd(12);
+    if (payload.action === "newaccount") {
+      const handle = rnd(8);
+      let lastErr = "";
+      for (const dom of CODE_DOMAINS) {
+        const { error } = await db.auth.admin.createUser({ email: `nb-${handle.toLowerCase()}@${dom}`, password: pw, email_confirm: true, user_metadata: { code_account: true } });
+        if (!error) return json({ code: formatCode(handle, pw) });
+        lastErr = error.message;
+      }
+      return json({ error: lastErr }, 500);
+    }
+    const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const { data: u } = await db.auth.getUser(token);
+    const email = u?.user?.email ?? "";
+    if (!u?.user || !CODE_DOMAINS.some((d) => email.endsWith("@" + d))) return json({ error: "only for accounts without email" }, 403);
+    const { error } = await db.auth.admin.updateUserById(u.user.id, { password: pw });
+    if (error) return json({ error: error.message }, 500);
+    return json({ code: formatCode(email.slice(3, 11).toUpperCase(), pw) });
+  }
 
   // Test notification for the signed-in caller.
   if (payload.test) {

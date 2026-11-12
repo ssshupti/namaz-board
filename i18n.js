@@ -78,7 +78,19 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","You're inside another app's browser.":"আপনি অন্য অ্যাপের ব্রাউজারে আছেন।","Google sign-in, installing and alerts won't work here. Open it in Chrome instead.":"এখানে Google সাইন ইন, ইনস্টল আর অ্যালার্ট কাজ করবে না। Chrome-এ খুলুন।","Open in Chrome":"Chrome-এ খুলুন",
+  "Language":"ভাষা","No Gmail?":"Gmail নেই?","Continue without email":"ইমেইল ছাড়া চালিয়ে যান","I have a backup code":"আমার ব্যাকআপ কোড আছে",
+  "You'll get an account with no email or Google, just a":"ইমেইল বা Google ছাড়াই অ্যাকাউন্ট পাবেন, শুধু একটি","backup code":"ব্যাকআপ কোড",
+  "⚠️ Your account is saved on":"⚠️ আপনার অ্যাকাউন্ট সেভ থাকবে","this device":"এই ডিভাইসে",
+  ". If you change phones or clear your browser, you'll need your backup code to get back in. Lose the code, and your streak can't be recovered.":"। ফোন বদলালে বা ব্রাউজার মুছলে আবার ঢুকতে ব্যাকআপ কোড লাগবে। কোড হারালে স্ট্রিক আর ফেরত পাওয়া যাবে না।",
+  "Create my account":"অ্যাকাউন্ট বানান","Creating…":"বানানো হচ্ছে…","Back":"ফিরে যান","Use a backup code 🔑":"ব্যাকআপ কোড দিয়ে ঢুকুন 🔑","Type the code you saved when you made your account.":"অ্যাকাউন্ট বানানোর সময় যে কোড সেভ করেছিলেন সেটি লিখুন।",
+  "Backup code":"ব্যাকআপ কোড","Sign in":"সাইন ইন","🔑 Save your backup code":"🔑 ব্যাকআপ কোড সেভ করুন","🔑 Your backup code":"🔑 আপনার ব্যাকআপ কোড",
+  "This is the only way back into your account on a new phone, or if this browser's data is cleared. Screenshot it or save it somewhere safe.":"নতুন ফোনে বা ব্রাউজারের ডেটা মুছে গেলে অ্যাকাউন্টে ফেরার এটাই একমাত্র উপায়। স্ক্রিনশট নিন বা নিরাপদ জায়গায় রাখুন।",
+  "Use it to sign in on another phone or after clearing this browser.":"অন্য ফোনে বা ব্রাউজার মোছার পর সাইন ইন করতে এটি ব্যবহার করুন।","Copy":"কপি","I've saved it ✓":"সেভ করেছি ✓",
+  "This browser doesn't have your code saved. Make a new one so you can always get back in. Your old code will stop working.":"এই ব্রাউজারে আপনার কোড সেভ নেই। নতুন একটি বানান, যাতে সবসময় ফিরতে পারেন। পুরনো কোড আর কাজ করবে না।",
+  "Make a new code":"নতুন কোড বানান","Tap again: old code stops working":"আবার চাপুন: পুরনো কোড বন্ধ হবে","Saved your backup code? Tap again":"ব্যাকআপ কোড সেভ করেছেন? আবার চাপুন",
+  "Code copied ✓":"কোড কপি হয়েছে ✓","New code ready. Save it somewhere safe 🔑":"নতুন কোড তৈরি। নিরাপদে রাখুন 🔑",
+  "That code didn't work. Check it and try again.":"কোডটি কাজ করেনি। দেখে আবার চেষ্টা করুন।","That code doesn't look right. It has 20 letters and numbers after NB.":"কোডটি ঠিক মনে হচ্ছে না। NB-এর পরে ২০টি অক্ষর ও সংখ্যা থাকে।",
+  "Couldn't create an account right now. Try again in a minute.":"এখন অ্যাকাউন্ট বানানো যাচ্ছে না। এক মিনিট পরে চেষ্টা করুন।","Couldn't make a new code. Try again.":"নতুন কোড বানানো যায়নি। আবার চেষ্টা করুন।","You're inside another app's browser.":"আপনি অন্য অ্যাপের ব্রাউজারে আছেন।","Google sign-in, installing and alerts won't work here. Open it in Chrome instead.":"এখানে Google সাইন ইন, ইনস্টল আর অ্যালার্ট কাজ করবে না। Chrome-এ খুলুন।","Open in Chrome":"Chrome-এ খুলুন",
   "Google sign-in, installing and alerts won't work here. Tap":"এখানে Google সাইন ইন, ইনস্টল আর অ্যালার্ট কাজ করবে না।","or the share icon, then":"বা শেয়ার আইকনে চাপুন, তারপর","Open in Safari":"Safari-তে খুলুন","📲":"📲","Install Namaz Board":"নামাজ বোর্ড ইনস্টল করুন","as an app on this phone.":"এই ফোনে অ্যাপ হিসেবে।","Install":"ইনস্টল","Installed 🎉 Open Namaz Board from your home screen.":"ইনস্টল হয়েছে 🎉 হোম স্ক্রিন থেকে নামাজ বোর্ড খুলুন।","Picking a city also picks the usual method there. You can still change it.":"শহর বাছলে সেখানকার প্রচলিত পদ্ধতিও বাছা হয়। চাইলে বদলাতে পারেন।","City not listed?":"শহর তালিকায় নেই?","Tap":"চাপুন","above for exact times wherever you are.":"(উপরে), যেখানেই থাকুন সঠিক সময় পাবেন।","Pick my city":"শহর বেছে নিন","📢 Message everyone":"📢 সবাইকে মেসেজ","Message the whole group 📢":"পুরো গ্রুপকে মেসেজ দাও 📢","Sent to everyone 📢":"সবাইকে পাঠানো হয়েছে 📢",
   "One group message per namaz. Try again at the next waqt 😌":"প্রতি নামাজে একটাই গ্রুপ মেসেজ। পরের ওয়াক্তে আবার পাঠাও 😌","→ 📢 everyone ·":"→ 📢 সবাই ·","Give them a nudge 👉":"একটু খোঁচা দাও 👉","Hype them up ✨":"হাইপ দাও ✨","See their month →":"তার পুরো মাস দেখুন →",
   "💬 Nudges":"💬 খোঁচা","Last 2 days":"গত ২ দিন","Tap a friend's ring above to nudge them or hype them up.":"বন্ধুর রিংয়ে চাপ দিয়ে খোঁচা বা হাইপ দাও।",
@@ -130,6 +142,7 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Signed in as 🔑 no email \(backup code\)$/, () => "সাইন ইন: 🔑 ইমেইল ছাড়া (ব্যাকআপ কোড)"],
   [/^🧭 Your phone is on a different time zone from$/, () => "🧭 আপনার ফোনের টাইম জোন আলাদা:"],
   [/^, so these are$/, () => "। এগুলো"],
   [/^times\. Moved or travelling\?$/, () => "-এর সময়। জায়গা বদলেছেন বা ভ্রমণে আছেন?"],

@@ -900,7 +900,9 @@ function viewSettings(){
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
   <div class="panel"><h3>Language</h3>${langPicker()}<p class="note">Alerts on your phone follow this too.</p></div>
-  <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button><a class="ghost" href="privacy.html" target="_blank" rel="noopener">Privacy</a></div><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button>${meDoc() ? `<button class="ghost danger ${S.confirmDelMe?"sure":""}" type="button" data-act="deleteme">${S.confirmDelMe?"Tap again: delete everything":"Delete my account"}</button>` : ""}</div></div>${watermark()}`;
+  ${isCodeEmail(S.email) ? (savedCode() ? codeCard(savedCode(), false) : `<section class="panel codecard"><h3>🔑 Your backup code</h3><p>This browser doesn't have your code saved. Make a new one so you can always get back in. Your old code will stop working.</p></section>`)
+    + `<div class="btns" style="margin:-6px 0 14px"><button class="ghost" type="button" data-act="newcode">${S.confirmNewCode ? "Tap again: old code stops working" : "Make a new code"}</button></div>` : ""}
+  <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button><a class="ghost" href="privacy.html" target="_blank" rel="noopener">Privacy</a></div><p class="note">Signed in as ${esc(emailLabel(S.email))}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button>${meDoc() ? `<button class="ghost danger ${S.confirmDelMe?"sure":""}" type="button" data-act="deleteme">${S.confirmDelMe?"Tap again: delete everything":"Delete my account"}</button>` : ""}</div></div>${watermark()}`;
 }
 function requestsNudge(){
   if (!S.admin || !S.requests.length) return "";
@@ -910,7 +912,7 @@ function requestsNudge(){
 const ago = iso => { const m = Math.round((Date.now()-new Date(iso))/60000); return m<60 ? `${Math.max(1,m)} min ago` : m<1440 ? `${Math.round(m/60)} h ago` : `${Math.round(m/1440)} d ago`; };
 function adminPanel(){
   const ids = Object.keys(S.members);
-  const reqs = S.requests.length ? S.requests.map(r => `<div class="reqrow"><div class="who"><b>${esc(r.name)}</b><small>${esc(r.email)} · ${ago(r.created_at)}</small>${r.note?`<p>“${esc(r.note)}”</p>`:""}</div>
+  const reqs = S.requests.length ? S.requests.map(r => `<div class="reqrow"><div class="who"><b>${esc(r.name)}</b><small>${esc(emailLabel(r.email))} · ${ago(r.created_at)}</small>${r.note?`<p>“${esc(r.note)}”</p>`:""}</div>
       <div class="btns"><button type="button" class="primary" data-act="approve" data-id="${esc(r.user_id)}">Approve</button><button type="button" class="ghost" data-act="decline" data-id="${esc(r.user_id)}">Decline</button></div></div>`).join("")
     : `<p class="note">No requests right now. When someone signs in and asks to join, they'll appear here and you'll get a notification.</p>`;
   return requestsPanel(reqs) + managePanel(ids);
@@ -923,7 +925,7 @@ function requestsPanel(reqs){
 function managePanel(ids){
   return `<section class="panel" id="manage"><h3>Or invite directly</h3><p>Add a Gmail address and that person can join straight away, without asking.</p>
     <form class="invite" id="inviteForm"><input id="f-invite" type="email" required placeholder="friend@gmail.com" autocomplete="off"><button class="primary" type="submit">Invite</button></form>
-    <div class="mlist">${S.invites.map(e => `<div class="mrow"><span class="n">${esc(e)}</span><button type="button" data-act="uninvite" data-e="${esc(e)}">Remove</button></div>`).join("") || `<p class="note">No invites yet.</p>`}</div>
+    <div class="mlist">${S.invites.map(e => `<div class="mrow"><span class="n">${esc(emailLabel(e))}</span><button type="button" data-act="uninvite" data-e="${esc(e)}">Remove</button></div>`).join("") || `<p class="note">No invites yet.</p>`}</div>
     <h3 style="margin-top:6px">Members</h3><p>Removing someone deletes their log for good.</p>
     <div class="mlist">${ids.map(id => `<div class="mrow">${avatar(id,S.members[id].name)}<span class="n">${esc(S.members[id].name||"Someone")}${id===S.myId?" (you)":""}</span>
       ${id===S.myId ? "" : `<button type="button" data-act="rm" data-id="${esc(id)}" class="${S.confirmRm===id?"sure":""}">${S.confirmRm===id?"Tap to confirm":"Remove"}</button>`}</div>`).join("")}</div></section>`;
@@ -1026,10 +1028,46 @@ function inAppBanner(){
   return `<div class="notice inapp"><span>⚠️ <b>You're inside another app's browser.</b> Google sign-in, installing and alerts won't work here. ${android ? "Open it in Chrome instead." : "Tap <b>•••</b> or the share icon, then <b>Open in Safari</b>."}</span>
     ${android ? `<div class="btns"><a class="primary btnlink" href="${esc(chromeUrl)}">Open in Chrome</a></div>` : ""}</div>`;
 }
+/* ---------- accounts without email ---------- */
+const CODE_DOMAINS = ["namaz-board.invalid", "namaz-board.example.com"];  // keep in sync with the notify function
+const isCodeEmail = e => CODE_DOMAINS.some(d => String(e||"").toLowerCase().endsWith("@"+d));
+const emailLabel = e => isCodeEmail(e) ? "🔑 no email (backup code)" : e;
+function parseCode(c){
+  let a = String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,""); if (a.startsWith("NB")) a = a.slice(2);
+  return a.length === 20 ? {handle:a.slice(0,8).toLowerCase(), pw:a.slice(8)} : null;
+}
+async function signInWithCode(code){
+  const p = parseCode(code); if (!p) return "That code doesn't look right. It has 20 letters and numbers after NB.";
+  for (const d of CODE_DOMAINS){
+    const {error} = await S.sb.auth.signInWithPassword({email:`nb-${p.handle}@${d}`, password:p.pw});
+    if (!error) return null;
+  }
+  return "That code didn't work. Check it and try again.";
+}
+const savedCode = () => { try { return localStorage.getItem("nb-code") || ""; } catch { return ""; } };
+const saveCode = c => { try { localStorage.setItem("nb-code", c); } catch {} };
+function codeCard(code, fresh){
+  return `<section class="panel codecard"><h3>🔑 ${fresh ? "Save your backup code" : "Your backup code"}</h3>
+    <p>${fresh ? "This is the only way back into your account on a new phone, or if this browser's data is cleared. Screenshot it or save it somewhere safe." : "Use it to sign in on another phone or after clearing this browser."}</p>
+    <div class="codebox" data-notr>${esc(code)}</div>
+    <div class="btns"><button class="primary" data-act="copycode" data-code="${esc(code)}">Copy</button>${fresh ? `<button class="ghost" data-act="codesaved">I've saved it ✓</button>` : ""}</div></section>`;
+}
+function viewNoMail(){
+  if (S.loginMode === "restore") return `<form class="panel hero-login" id="restoreForm"><h3>Use a backup code 🔑</h3>
+    <p>Type the code you saved when you made your account.</p>
+    <label class="f">Backup code<input id="rc-code" required autocomplete="off" placeholder="NB-XXXX-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:.06em"></label>
+    <div class="btns"><button class="primary" type="submit">Sign in</button><button class="ghost" type="button" data-act="loginback">Back</button></div></form>`;
+  return `<section class="panel hero-login"><h3>Continue without email</h3>
+    <p>You'll get an account with no email or Google, just a <b>backup code</b>.</p>
+    <div class="notice"><span>⚠️ Your account is saved on <b>this device</b>. If you change phones or clear your browser, you'll need your backup code to get back in. Lose the code, and your streak can't be recovered.</span></div>
+    <div class="btns"><button class="primary" data-act="nomailgo">Create my account</button><button class="ghost" data-act="loginback">Back</button></div></section>`;
+}
 function viewLogin(){
+  if (S.loginMode) return inAppBanner() + viewNoMail();
   return inAppBanner() + langPicker() + inviteBanner() + `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
+    <p class="altlogin">No Gmail? <button class="linkbtn" data-act="nomail">Continue without email</button> · <button class="linkbtn" data-act="restore">I have a backup code</button></p>
     <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
 }
 function inviteBanner(){
@@ -1038,19 +1076,20 @@ function inviteBanner(){
 }
 function viewNotInvited(){
   const owner = esc(CONF.ownerName||"the board owner");
-  if (S.myRequest) return `<section class="panel hero-login"><h3>Request sent 💌</h3>
+  const fresh = S.newCode ? codeCard(S.newCode, true) : "";
+  if (S.myRequest) return fresh + `<section class="panel hero-login"><h3>Request sent 💌</h3>
     <p>${owner} has been asked to let <b>${esc(S.myRequest.name)}</b> in. This page opens the board by itself once you're approved, so you can close it and come back later.</p>
     <div class="waiting" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="btns"><button class="ghost" data-act="cancelreq">Cancel request</button><button class="ghost" data-act="signout">Use another account</button></div>
-    <p class="note">Signed in as ${esc(S.email)}</p></section>` + inviteBanner();
+    <p class="note">Signed in as ${esc(emailLabel(S.email))}</p></section>` + inviteBanner();
   const meta = S.session?.user?.user_metadata || {};
   const guess = meta.given_name || (meta.full_name||"").split(" ")[0] || "";
-  return inviteBanner() + `<form class="panel" id="reqForm"><h3>Ask to join 🌸</h3>
+  return fresh + inviteBanner() + `<form class="panel" id="reqForm"><h3>Ask to join 🌸</h3>
     <p>Namaz Board is invite only. Send a request and ${owner} will approve it.</p>
     <label class="f">Your name<input id="r-name" maxlength="40" required value="${esc(guess)}"></label>
     <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
     <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">Use another account</button></div>
-    <p class="note">Signed in as ${esc(S.email)}</p></form>`;
+    <p class="note">Signed in as ${esc(emailLabel(S.email))}</p></form>`;
 }
 
 function showMilestone(ms){
@@ -1132,7 +1171,31 @@ document.addEventListener("click", async e => {
     const {error} = await S.sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin + location.pathname, queryParams:{prompt:"select_account"}}});
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
   }
-  else if (a==="signout"){ await S.sb.auth.signOut(); location.reload(); }
+  else if (a==="signout"){
+    if (isCodeEmail(S.email) && !S.confirmOut){ S.confirmOut = true; b.textContent = "Saved your backup code? Tap again"; setTimeout(() => { S.confirmOut = false; }, 5000); return; }
+    await S.sb.auth.signOut(); location.reload();
+  }
+  else if (a==="nomail"){ S.loginMode = "new"; render(); }
+  else if (a==="restore"){ S.loginMode = "restore"; render(); }
+  else if (a==="loginback"){ S.loginMode = null; render(); }
+  else if (a==="nomailgo"){
+    b.disabled = true; b.textContent = "Creating…";
+    const {data, error} = await S.sb.functions.invoke("notify",{body:{action:"newaccount"}});
+    if (error || !data?.code){ b.disabled = false; b.textContent = "Create my account"; toast("Couldn't create an account right now. Try again in a minute."); return; }
+    saveCode(data.code); S.newCode = data.code;
+    const err = await signInWithCode(data.code);
+    if (err){ toast(err); b.disabled = false; return; }
+    S.loginMode = null; await afterAuth();
+  }
+  else if (a==="copycode"){ try { await navigator.clipboard.writeText(b.dataset.code); toast("Code copied ✓"); } catch { toast(b.dataset.code); } }
+  else if (a==="codesaved"){ S.newCode = null; render(); }
+  else if (a==="newcode"){
+    if (!S.confirmNewCode){ S.confirmNewCode = true; S.forceForm = true; render(); setTimeout(() => { S.confirmNewCode = false; }, 5000); return; }
+    S.confirmNewCode = false; b.disabled = true;
+    const {data, error} = await S.sb.functions.invoke("notify",{body:{action:"newcode"}});
+    if (error || !data?.code){ b.disabled = false; toast("Couldn't make a new code. Try again."); return; }
+    saveCode(data.code); S.forceForm = true; render(); toast("New code ready. Save it somewhere safe 🔑");
+  }
   else if (a==="recheck"){ await afterAuth(); }
   else if (a==="cancelreq"){
     const {error} = await S.sb.from("join_requests").delete().eq("user_id", S.myId);
@@ -1352,6 +1415,13 @@ document.addEventListener("submit", async e => {
     if (error){ toast("Couldn't create it: " + error.message); return; }
     S.gform = null; await syncChanges(); S.gid = data.id; pushMyStats(); render(); toast("Group created 🌸 Tap Invite to share it.");
     return;
+  }
+  if (e.target.id === "restoreForm"){
+    const btn = e.target.querySelector("[type=submit]"); btn.disabled = true;
+    const code = $("rc-code").value, err = await signInWithCode(code);
+    if (err){ btn.disabled = false; toast(err); return; }
+    const pc = parseCode(code), h = pc.handle.toUpperCase(), w = pc.pw;
+    saveCode(`NB-${h.slice(0,4)}-${h.slice(4)}-${w.slice(0,4)}-${w.slice(4,8)}-${w.slice(8)}`); S.loginMode = null; await afterAuth(); return;
   }
   if (e.target.id === "gJoinForm"){ await joinWithCode($("g-code").value); return; }
   if (e.target.id === "gEditForm"){
