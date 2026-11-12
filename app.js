@@ -1129,7 +1129,7 @@ document.addEventListener("click", async e => {
   if (a==="ntoggle") return; // handled on change
   if (!a || a==="tab"){ S.view = b.dataset.tab; render(); scrollTo({top:0}); return; }
   if (a==="google"){
-    const {error} = await S.sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin + location.pathname}});
+    const {error} = await S.sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin + location.pathname, queryParams:{prompt:"select_account"}}});
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
   }
   else if (a==="signout"){ await S.sb.auth.signOut(); location.reload(); }
