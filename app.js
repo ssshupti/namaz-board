@@ -93,7 +93,7 @@ const METHODS = {Karachi:"Karachi (Bangladesh, India, Pakistan)",MoonsightingCom
 const DEFAULT = {city:"dhaka",method:"Karachi",madhab:"hanafi"};
 const P = [
   {k:"fajr",en:"Fajr",bn:"ফজর",f:2,chips:[["s","Sunnah","2"]]},
-  {k:"dhuhr",en:"Dhuhr",bn:"যোহর",f:4,chips:[["s","Sunnah","4+2"],["n","Nafl","2"]]},
+  {k:"dhuhr",en:"Dhuhr",bn:"যোহর",f:4,chips:[["b","Sunnah","4"],["s","Sunnah","2"],["n","Nafl","2"]]},
   {k:"asr",en:"Asr",bn:"আসর",f:4,chips:[["s","Sunnah","4"]]},
   {k:"maghrib",en:"Maghrib",bn:"মাগরিব",f:3,chips:[["s","Sunnah","2"],["n","Nafl","2"]]},
   {k:"isha",en:"Isha",bn:"এশা",f:4,chips:[["b","Sunnah","4"],["s","Sunnah","2"],["w","Witr","3"],["n","Nafl","2"]]}
