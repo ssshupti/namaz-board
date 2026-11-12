@@ -445,3 +445,6 @@ html[lang="bn"] .bn{display:none}
 .allbtn:active{transform:translateY(2px);box-shadow:none}
 .gav{background:linear-gradient(135deg,#FFE1EC,#E6E0FF)!important;font-size:24px!important}
 .nrow.g .nbubble{background:#E6E0FF}
+.notice.tzwarn{flex-direction:column;align-items:stretch;gap:10px}
+.notice.tzwarn .btns{flex-wrap:wrap;gap:8px}
+.notice.tzwarn .btns button{flex:1 1 auto}

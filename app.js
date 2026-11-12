@@ -152,13 +152,13 @@ const clock = ms => { const s=Math.max(0,Math.floor(ms/1000)); const h=Math.floo
 /* Where times are calculated for: a city from the list, or "custom" = the person's own (rounded) location. */
 const DEVICE_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })();
 const TZ_ALIAS = {"America/Swift_Current":"America/Regina","Canada/Saskatchewan":"America/Regina","Australia/Lindeman":"Australia/Brisbane","Australia/Queensland":"Australia/Brisbane","Australia/NSW":"Australia/Sydney","Australia/ACT":"Australia/Sydney","Australia/Canberra":"Australia/Sydney","Europe/Jersey":"Europe/London","Europe/Guernsey":"Europe/London","Europe/Isle_of_Man":"Europe/London","Asia/Calcutta":"Asia/Kolkata","Asia/Dacca":"Asia/Dhaka","Europe/Belfast":"Europe/London","America/Detroit":"America/New_York"};
+const tzOff = z => { try { const d = new Date(), f = new Intl.DateTimeFormat("en-US",{timeZone:z,hourCycle:"h23",year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}).formatToParts(d).reduce((o,p)=>(o[p.type]=p.value,o),{});
+  return Math.round((Date.UTC(f.year,f.month-1,f.day,f.hour,f.minute) - d.getTime())/60000/15); } catch { return null; } };
 function guessCity(){
   const tz = TZ_ALIAS[DEVICE_TZ] || DEVICE_TZ;
   const exact = Object.keys(CITIES).find(k => CITIES[k].tz===tz); if (exact) return exact;
   // Unknown zone: pick a listed city on the same clock today (the person can still choose theirs or share location).
-  const off = z => { try { const d = new Date(), f = new Intl.DateTimeFormat("en-US",{timeZone:z,hourCycle:"h23",year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}).formatToParts(d).reduce((o,p)=>(o[p.type]=p.value,o),{});
-    return Math.round((Date.UTC(f.year,f.month-1,f.day,f.hour,f.minute) - d.getTime())/60000/15); } catch { return null; } };
-  const mine = off(tz); return Object.keys(CITIES).find(k => off(CITIES[k].tz)===mine) || DEFAULT.city;
+  const mine = tzOff(tz); return Object.keys(CITIES).find(k => tzOff(CITIES[k].tz)===mine) || DEFAULT.city;
 }
 const cfgOf = m => {
   const custom = m?.city==="custom" && Number.isFinite(m?.lat) && Number.isFinite(m?.lng) && m?.tz;
@@ -487,6 +487,20 @@ function makruhNow(t, now){
 }
 
 /* ---------- sky hero ---------- */
+/* Hijri date built from parts, so no browser can add the wrong era (some show "BC"). */
+function hijriDate(now, tz){
+  for (const cal of ["islamic-umalqura","islamic","islamic-civil"]){
+    try {
+      const f = new Intl.DateTimeFormat("en-GB-u-ca-"+cal,{day:"numeric",month:"long",year:"numeric",timeZone:tz});
+      if (!f.resolvedOptions().calendar.startsWith("islamic")) continue;
+      const p = Object.fromEntries(f.formatToParts(now).map(x => [x.type, x.value]));
+      const y = parseInt(String(p.year||p.relatedYear||"").replace(/\D/g,""),10);
+      if (!p.day || !p.month || !(y > 1400 && y < 1600)) continue;
+      return `${p.day} ${p.month} ${y} AH`;
+    } catch {}
+  }
+  return "";
+}
 function renderSky(){
   const m = meDoc(), cfg = cfgOf(m), c = loc(cfg), now = new Date();
   const today = appDay(cfg,now), t = times(cfg,today), nextT = times(cfg,addDays(today,1));
@@ -501,7 +515,7 @@ function renderSky(){
   // The next moment after Fajr is sunrise (makruh), not Ishraq, so call it what it is.
   const nextName = i+1===6 ? "Fajr" : seq[i+1][0]==="sunrise" ? "Sunrise" : (N[seq[i+1][0]]?.[0] || "");
   const pct = Math.min(100, (now-startAt)/(endAt-startAt)*100);
-  let hijri = ""; try { hijri = new Intl.DateTimeFormat("en-GB-u-ca-islamic-umalqura",{day:"numeric",month:"long",year:"numeric"}).format(now); } catch {}
+  const hijri = hijriDate(now, c.tz);
   const beads = P.map(p => {
     const done = codeOf(S.myId,today,p.k).includes("f"), isCur = cur===p.k, miss = !done && now >= waqtEnd(cfg,today,p.k);
     return `<div class="bead ${done?"done":""} ${isCur?"cur":""} ${miss?"miss":""}"><b>${done?"✓":""}</b><span>${p.en}</span><span class="t">${fmtT(t[p.k],c.tz).replace(/ ?[ap]m/i,"")}</span></div>`;
@@ -649,13 +663,25 @@ function ringStrip(ids, title, gid){
       <span class="fn">${r.id===S.myId?"You":esc(r.m.name||"Someone")}${badgeChip(r.id)}</span>${bestBadge(r.id)}</button>`).join("")}</div></section>`;
 }
 
+/* Phone clock is in a different time zone from the saved city: offer a one-tap switch. */
+function tzBanner(){
+  const m = meDoc(); if (!m || !DEVICE_TZ) return "";
+  const cfg = cfgOf(m), here = loc(cfg);
+  if (tzOff(here.tz) === tzOff(DEVICE_TZ)) return "";
+  const key = `${cfg.city}|${DEVICE_TZ}`; let dismissed = ""; try { dismissed = localStorage.getItem("nb-tzok") || ""; } catch {}
+  if (dismissed === key) return "";
+  const g = guessCity(), gc = CITIES[g], fits = gc && tzOff(gc.tz) === tzOff(DEVICE_TZ);
+  return `<div class="notice tzwarn"><span>🧭 Your phone is on a different time zone from <b data-notr>${esc(here.name)}</b>, so these are <b data-notr>${esc(here.name)}</b> times. Moved or travelling?</span>
+    <div class="btns">${fits ? `<button class="primary" data-act="tzswitch" data-city="${g}">Use ${esc(gc.name)}</button>` : ""}<button class="ghost" data-act="tab" data-tab="settings">Pick my city</button><button class="ghost" data-act="tzok" data-key="${esc(key)}">Keep ${esc(here.name)}</button></div></div>`;
+}
+
 /* ---------- views ---------- */
 function viewToday(){
   const m = meDoc(), cfg = cfgOf(m), tz = loc(cfg).tz, now = new Date();
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
-  let html = requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
+  let html = tzBanner() + requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
@@ -1111,6 +1137,13 @@ document.addEventListener("click", async e => {
   else if (a==="pushon") enablePush();
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
+  else if (a==="tzok"){ try { localStorage.setItem("nb-tzok", b.dataset.key); } catch {} render(); }
+  else if (a==="tzswitch"){
+    const k = b.dataset.city, c = CITIES[k]; if (!c) return; b.disabled = true;
+    const {error} = await S.sb.from("members").update({city:k, method:c.method, lat:null, lng:null, tz:null, place:null}).eq("id", S.myId);
+    if (error){ b.disabled = false; toast("Couldn't save. Try again."); return; }
+    Object.assign(meDoc(), {city:k, method:c.method, lat:null, lng:null, tz:null, place:null}); cache.clear(); pushMyStats(); render(); toast(`Now using ${c.name} times ✓`);
+  }
   else if (a==="geo"){
     if (!navigator.geolocation){ toast("This browser can't share location. Pick your city from the list instead."); return; }
     $("geoNote").textContent = "Finding you…";
