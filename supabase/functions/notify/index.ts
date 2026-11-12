@@ -242,32 +242,32 @@ const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { sta
 
 /* Nudge templates. Keep in sync with NUDGES in app.js. {w} = the namaz name. */
 export const NUDGE_TEXT: Record<string, [string, string]> = {
-  n1: ["⏰ {w} is calling, pick up 📞", "⏰ {w} ডাকছে, ফোনটা ধরো 📞"],
-  n2: ["🔥 ur streak is on life support", "🔥 তোমার স্ট্রিক আইসিইউতে"],
-  n3: ["👀 that {w} ring is looking kinda empty", "👀 {w}-এর রিংটা কিন্তু ফাঁকা"],
-  n4: ["🧎 pray {w} w me? 🤝", "🧎 একসাথে {w} পড়বা? 🤝"],
-  n5: ["🫵 no cap, go pray {w}", "🫵 সত্যি বলছি, {w} পড়ে আসো"],
-  h1: ["🌸 MashaAllah, u ate that", "🌸 মাশাআল্লাহ, ফাটিয়ে দিছো"],
-  h2: ["💅 slay (spiritually)", "💅 স্লে (আধ্যাত্মিকভাবে)"],
-  h3: ["👑 main character energy", "👑 মেইন ক্যারেক্টার এনার্জি"],
-  h4: ["🔥 streak go brrr", "🔥 স্ট্রিক চলছে ধুমসে"],
-  h5: ["🫶 proud of u fr", "🫶 সত্যি তোমার জন্য গর্বিত"],
-  r1: ["🤲 JazakAllah khair bestie", "🤲 জাযাকাল্লাহ খাইর দোস্ত"],
-  r2: ["🏃 omw to the jaynamaz", "🏃 জায়নামাজের দিকে যাচ্ছি"],
-  r3: ["✅ done & dusted", "✅ পড়া শেষ"],
-  r4: ["😭 ok ok going", "😭 আচ্ছা আচ্ছা যাচ্ছি"],
-  g1: ["📢 {w} roll call, who's in?", "📢 {w} হাজিরা, কে কে আছো?"],
-  g2: ["🔥 group streak on the line, don't fumble it", "🔥 গ্রুপ স্ট্রিক ঝুঁকিতে, কেউ ফেল মারবা না"],
-  g3: ["🫂 let's all pray {w} rn", "🫂 চলো সবাই এখনই {w} পড়ি"],
-  g4: ["🤲 remember each other in dua today", "🤲 আজ সবাই সবার জন্য দোয়া করো"],
-  g5: ["🎉 we all prayed {w}, we're so back", "🎉 সবাই {w} পড়েছি, আমরা ফিরে এসেছি"],
+  n1: ["did u pray {w} yet?","{w} porsos?"],
+  n2: ["{w}'s almost over 👀","{w} er time sesh hoye jacche 👀"],
+  n3: ["pray {w} then come back to ur phone 😤","phone rakh, {w} por 😤"],
+  n4: ["wanna pray {w} together?","cholo eksathe {w} pori?"],
+  n5: ["did u pray {w} yet?","{w} porsos?"],
+  h1: ["mashaAllah 🥹","mashaAllah 🥹"],
+  h2: ["yesss 🙌","ufff consistency 👏"],
+  h3: ["ok consistency 👏","streak bachay rakhsos 🔥"],
+  h4: ["proud of u 🫶","proud of u 🫶"],
+  h5: ["proud of u 🫶","proud of u 🫶"],
+  r1: ["jazakAllah 🤍","jazakAllah 🤍"],
+  r2: ["going now","jaitesi"],
+  r3: ["already did 😌","already porsi 😌"],
+  r4: ["5 more mins 😭","5 min 😭"],
+  g1: ["{w} everyone 🕰️","{w} er time sobai 🕰️"],
+  g2: ["who's prayed {w}?","ke ke {w} porse?"],
+  g3: ["let's not break the streak guys","streak bhangish na keu"],
+  g4: ["everyone prayed {w} 🥳 mashaAllah","sobai {w} porse 🥳 mashaAllah"],
+  g5: ["everyone prayed {w} 🥳 mashaAllah","sobai {w} porse 🥳 mashaAllah"],
 };
-const WAQT_NAME: Record<string, [string, string]> = { fajr: ["Fajr", "ফজর"], dhuhr: ["Dhuhr", "যোহর"], asr: ["Asr", "আসর"], maghrib: ["Maghrib", "মাগরিব"], isha: ["Isha", "এশা"] };
+const WAQT_NAME: Record<string, [string, string]> = { fajr: ["fajr", "fajr"], dhuhr: ["dhuhr", "zohor"], asr: ["asr", "asr"], maghrib: ["maghrib", "magrib"], isha: ["isha", "esha"] };
 export function nudgeMessage(kind: string, waqt: string, from: string, bn: boolean, group = "") {
   const i = bn ? 1 : 0, body = (NUDGE_TEXT[kind]?.[i] ?? "👋").replaceAll("{w}", WAQT_NAME[waqt]?.[i] ?? waqt);
-  const title = kind[0] === "g" ? `📢 ${from} → ${group}` : kind[0] === "r" ? (bn ? `💬 ${from} উত্তর দিল` : `💬 ${from} replied`)
-    : kind[0] === "h" ? (bn ? `✨ ${from} তোমাকে হাইপ দিল` : `✨ ${from} is hyping u`)
-    : (bn ? `👉 ${from} তোমাকে খোঁচা দিল` : `👉 ${from} nudged u`);
+  const title = kind[0] === "g" ? `📢 ${from} → ${group}` : kind[0] === "r" ? `💬 ${from}`
+    : kind[0] === "h" ? `✨ ${from}`
+    : `👉 ${from}`;
   return { title, body };
 }
 

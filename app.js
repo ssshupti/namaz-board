@@ -111,27 +111,29 @@ const watermark = () => `<p class="wm">made with <span aria-hidden="true">🌸</
 const hue = id => { let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))%360; return h; };
 /* Nudges: ready-made messages to friends in your groups. Keep in sync with NUDGE_TEXT in the notify function. */
 const NUDGES = {
-  n1:["⏰ {w} is calling, pick up 📞","⏰ {w} ডাকছে, ফোনটা ধরো 📞"],
-  n2:["🔥 ur streak is on life support","🔥 তোমার স্ট্রিক আইসিইউতে"],
-  n3:["👀 that {w} ring is looking kinda empty","👀 {w}-এর রিংটা কিন্তু ফাঁকা"],
-  n4:["🧎 pray {w} w me? 🤝","🧎 একসাথে {w} পড়বা? 🤝"],
-  n5:["🫵 no cap, go pray {w}","🫵 সত্যি বলছি, {w} পড়ে আসো"],
-  h1:["🌸 MashaAllah, u ate that","🌸 মাশাআল্লাহ, ফাটিয়ে দিছো"],
-  h2:["💅 slay (spiritually)","💅 স্লে (আধ্যাত্মিকভাবে)"],
-  h3:["👑 main character energy","👑 মেইন ক্যারেক্টার এনার্জি"],
-  h4:["🔥 streak go brrr","🔥 স্ট্রিক চলছে ধুমসে"],
-  h5:["🫶 proud of u fr","🫶 সত্যি তোমার জন্য গর্বিত"],
-  r1:["🤲 JazakAllah khair bestie","🤲 জাযাকাল্লাহ খাইর দোস্ত"],
-  r2:["🏃 omw to the jaynamaz","🏃 জায়নামাজের দিকে যাচ্ছি"],
-  r3:["✅ done & dusted","✅ পড়া শেষ"],
-  r4:["😭 ok ok going","😭 আচ্ছা আচ্ছা যাচ্ছি"],
-  g1:["📢 {w} roll call, who's in?","📢 {w} হাজিরা, কে কে আছো?"],
-  g2:["🔥 group streak on the line, don't fumble it","🔥 গ্রুপ স্ট্রিক ঝুঁকিতে, কেউ ফেল মারবা না"],
-  g3:["🫂 let's all pray {w} rn","🫂 চলো সবাই এখনই {w} পড়ি"],
-  g4:["🤲 remember each other in dua today","🤲 আজ সবাই সবার জন্য দোয়া করো"],
-  g5:["🎉 we all prayed {w}, we're so back","🎉 সবাই {w} পড়েছি, আমরা ফিরে এসেছি"]};
-const nudgeText = (kind, waqt) => { const bn = typeof LANG!=="undefined" && LANG==="bn", p = P.find(x => x.k===waqt);
-  return (NUDGES[kind]?.[bn?1:0] || "👋").replaceAll("{w}", p ? (bn ? p.bn : p.en) : waqt); };
+  n1:["did u pray {w} yet?","{w} porsos?"],
+  n2:["{w}'s almost over 👀","{w} er time sesh hoye jacche 👀"],
+  n3:["pray {w} then come back to ur phone 😤","phone rakh, {w} por 😤"],
+  n4:["wanna pray {w} together?","cholo eksathe {w} pori?"],
+  n5:["did u pray {w} yet?","{w} porsos?"],
+  h1:["mashaAllah 🥹","mashaAllah 🥹"],
+  h2:["yesss 🙌","ufff consistency 👏"],
+  h3:["ok consistency 👏","streak bachay rakhsos 🔥"],
+  h4:["proud of u 🫶","proud of u 🫶"],
+  h5:["proud of u 🫶","proud of u 🫶"],
+  r1:["jazakAllah 🤍","jazakAllah 🤍"],
+  r2:["going now","jaitesi"],
+  r3:["already did 😌","already porsi 😌"],
+  r4:["5 more mins 😭","5 min 😭"],
+  g1:["{w} everyone 🕰️","{w} er time sobai 🕰️"],
+  g2:["who's prayed {w}?","ke ke {w} porse?"],
+  g3:["let's not break the streak guys","streak bhangish na keu"],
+  g4:["everyone prayed {w} 🥳 mashaAllah","sobai {w} porse 🥳 mashaAllah"],
+  g5:["everyone prayed {w} 🥳 mashaAllah","sobai {w} porse 🥳 mashaAllah"]};
+// Old n5/h5/g5 only render past messages; new messages use 1–4.
+const WQ = {fajr:["fajr","fajr"],dhuhr:["dhuhr","zohor"],asr:["asr","asr"],maghrib:["maghrib","magrib"],isha:["isha","esha"]};
+const nudgeText = (kind, waqt) => { const i = typeof LANG!=="undefined" && LANG==="bn" ? 1 : 0;
+  return (NUDGES[kind]?.[i] || "👋").replaceAll("{w}", WQ[waqt]?.[i] || waqt); };
 const avatar = (id,name,crown) => `<span class="av" style="background:linear-gradient(140deg,hsl(${hue(id)} 85% 82%),hsl(${(hue(id)+50)%360} 80% 76%))">${crown?'<span class="crown" aria-hidden="true">👑</span>':""}${esc((name||"?").trim().charAt(0).toUpperCase())}</span>`;
 
 /* ---------- dates & times ---------- */
@@ -572,20 +574,20 @@ function groupSheet(gid){
   return `<div class="sheet-bg" data-act="nudgeclose"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Message everyone in ${esc(g.name)}">
     <div class="shead"><span class="av gav">📢</span><div><b data-notr>${esc(g.name)}</b><small>Everyone · ${groupIds(gid).length - 1} friends</small></div><button class="x" data-act="nudgeclose" aria-label="Close">✕</button></div>
     <p class="slabel">Message the whole group 📢</p>
-    ${sent ? `<div class="nsent">Sent ✓ <span>${esc(nudgeText(sent.kind, sent.waqt))}</span></div><p class="note">One group message per namaz. Try again at the next waqt 😌</p>`
-      : `<div class="nchips">${["g1","g2","g3","g4","g5"].map((k,i) => `<button class="nchip c${i}" data-act="nudgesend" data-k="${k}">${esc(nudgeText(k, tg.waqt))}</button>`).join("")}</div>`}</div>`;
+    ${sent ? `<div class="nsent">Sent ✓ <span data-notr>${esc(nudgeText(sent.kind, sent.waqt))}</span></div><p class="note">One group message per namaz. Try again at the next waqt 😌</p>`
+      : `<div class="nchips">${["g1","g2","g3","g4"].map((k,i) => `<button class="nchip c${i}" data-notr data-act="nudgesend" data-k="${k}">${esc(nudgeText(k, tg.waqt))}</button>`).join("")}</div>`}</div>`;
 }
 function nudgeSheet(){
   if (S.nudgeTo.all) return groupSheet(S.nudgeTo.gid);
   const {id, gid} = S.nudgeTo, m = S.members[id]; if (!m) return "";
   const tg = nudgeTarget(id), sent = myNudge(id, tg.day, tg.waqt);
-  const keys = tg.prayed ? ["h1","h2","h3","h4","h5"] : ["n1","n2","n3","n4","n5"];
+  const keys = tg.prayed ? ["h1","h2","h3","h4"] : ["n1","n2","n3","n4"];
   const status = tg.prayed ? `prayed ${tg.p.en} ✓` : `${tg.p.en}: not logged yet`;
   return `<div class="sheet-bg" data-act="nudgeclose"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Send ${esc(m.name||"them")} a nudge">
     <div class="shead">${avatar(id,m.name)}<div><b data-notr>${esc(m.name||"Someone")}</b><small>${status}</small></div><button class="x" data-act="nudgeclose" aria-label="Close">✕</button></div>
     <p class="slabel">${tg.prayed ? "Hype them up ✨" : "Give them a nudge 👉"}</p>
-    ${sent ? `<div class="nsent">Sent ✓ <span>${esc(nudgeText(sent.kind, sent.waqt))}</span></div><p class="note">One per namaz, so nobody gets spammed. Try again at the next waqt 😌</p>`
-      : `<div class="nchips">${keys.map((k,i) => `<button class="nchip c${i}" data-act="nudgesend" data-k="${k}">${esc(nudgeText(k, tg.waqt))}</button>`).join("")}</div>`}
+    ${sent ? `<div class="nsent">Sent ✓ <span data-notr>${esc(nudgeText(sent.kind, sent.waqt))}</span></div><p class="note">One per namaz, so nobody gets spammed. Try again at the next waqt 😌</p>`
+      : `<div class="nchips">${keys.map((k,i) => `<button class="nchip c${i}" data-notr data-act="nudgesend" data-k="${k}">${esc(nudgeText(k, tg.waqt))}</button>`).join("")}</div>`}
     <button class="ghost slink" data-act="openfr" data-gid="${esc(gid)}" data-id="${esc(id)}">See their month →</button></div>`;
 }
 function nudgeFeed(gid){
@@ -600,8 +602,8 @@ function nudgeFeed(gid){
     const canReply = forMe && !n.reply_to && !replied.has(n.id);
     return `<div class="nrow ${forMe?"tome":""} ${n.kind[0]}">
       <div class="nmeta"><span data-notr>${nm(n.from_id)}</span> → ${n.to_id ? `<span data-notr>${nm(n.to_id)}</span>` : "📢 everyone"} · ${ago(n.created_at)}</div>
-      <div class="nbubble">${esc(nudgeText(n.kind, n.waqt))}</div>
-      ${canReply ? `<div class="rchips">${["r1","r2","r3","r4"].map(k => `<button class="rchip" data-act="nudgereply" data-id="${n.id}" data-k="${k}">${esc(nudgeText(k, n.waqt))}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</section>`;
+      <div class="nbubble" data-notr>${esc(nudgeText(n.kind, n.waqt))}</div>
+      ${canReply ? `<div class="rchips">${["r1","r2","r3","r4"].map(k => `<button class="rchip" data-notr data-act="nudgereply" data-id="${n.id}" data-k="${k}">${esc(nudgeText(k, n.waqt))}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</section>`;
 }
 async function sendNudge(row){
   const {data, error} = await S.sb.from("nudges").insert(row).select().single();
@@ -612,8 +614,8 @@ async function sendNudge(row){
 function sticker(n){
   try { localStorage.setItem("nb-nudge-seen", n.created_at); } catch {}
   let el = $("sticker"); if (!el){ el = document.createElement("div"); el.id = "sticker"; el.setAttribute("role","status"); document.body.appendChild(el); }
-  const txt = nudgeText(n.kind, n.waqt), emo = [...txt][0];
-  el.innerHTML = `<div class="stk ${n.kind[0]}"><span class="se">${emo}</span><div><small data-notr>${esc(S.members[n.from_id]?.name || "A friend")}</small><b>${esc(txt.replace(emo,"").trim())}</b></div></div>`;
+  const txt = nudgeText(n.kind, n.waqt), emo = ({n:"👉",h:"✨",r:"💬",g:"📢"})[n.kind[0]] || "💌";
+  el.innerHTML = `<div class="stk ${n.kind[0]}"><span class="se">${emo}</span><div><small data-notr>${esc(S.members[n.from_id]?.name || "A friend")}</small><b data-notr>${esc(txt)}</b></div></div>`;
   el.className = "show"; clearTimeout(sticker.t); sticker.t = setTimeout(() => el.className = "", 5200);
   if (n.kind[0]==="h") celebrate();
 }
