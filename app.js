@@ -166,6 +166,8 @@ function chipStart(cfg, ds, k, c){
 
 /* ---------- data & scoring ---------- */
 const meDoc = () => S.members[S.myId];
+/* On the day someone joins, prayers that began before they joined only count if they log them. */
+const preJoin = (m, ds, start) => !!(m && m.joined===ds && m.createdAt && start < new Date(m.createdAt));
 /* Groups decide who sees whom. gmembers: {groupId: [userIds]} */
 const groupIds = gid => (S.gmembers[gid] || []).filter(id => S.members[id]);
 const isPub = id => S.members[id]?.isPublic !== false;
@@ -183,6 +185,7 @@ function dayState(id, ds, now=new Date()){
   const cfg = cfgOf(m), t = times(cfg,ds); const open = [];
   for (const p of P){
     if (codeOf(id,ds,p.k).includes("f")) continue;
+    if (preJoin(m, ds, t[p.k])) continue;
     const close = new Date(+t[p.k]+DAY);
     if (now >= close) return {s:"miss"};
     if (now >= t[p.k]) open.push({p, close});
@@ -247,8 +250,8 @@ function groupStreak(gid, now=new Date()){
 }
 function dayStats(id, cfg, ds, now){
   let due=0, done=0, pts=0; const t = times(cfg,ds);
-  const ex = id===S.myId && S.excused.has(ds);
-  for (const p of P){ const c=codeOf(id,ds,p.k); if (t[p.k] <= now){ const f = c.includes("f"); if (f || !ex) due++; if (f) done++; } for (const ch of c) pts += PTS[ch]||0; }
+  const ex = id===S.myId && S.excused.has(ds), m = S.members[id];
+  for (const p of P){ const c=codeOf(id,ds,p.k); if (t[p.k] <= now){ const f = c.includes("f"); if (f || (!ex && !preJoin(m,ds,t[p.k]))) due++; if (f) done++; } for (const ch of c) pts += PTS[ch]||0; }
   for (const ch of codeOf(id,ds,"x")) pts += PTS[ch]||0;
   return {due,done,pts};
 }
@@ -298,7 +301,7 @@ function grade(pct){
 
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
-  return {name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
+  return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
     notifyStart:r.notify_start, notifyEnd:r.notify_end, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
@@ -655,7 +658,7 @@ function gradesheet(id){
   for (let d=start; d<=today; d=addDays(d,1)){
     const t = times(cfg,d);
     const ex = id===S.myId && S.excused.has(d);
-    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || !ex) o.due++; if (f) o.done++; if (c.includes("s")) o.s++; } });
+    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || (!ex && !preJoin(m,d,t[o.p.k]))) o.due++; if (f) o.done++; if (c.includes("s")) o.s++; } });
     nights++; if (codeOf(id,d,"x").includes("t")) tah++;
   }
   const month = new Date(today+"T12:00:00Z").toLocaleDateString("en-GB",{month:"long",timeZone:"UTC"});

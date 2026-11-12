@@ -172,7 +172,7 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
 /* ---------- shared stats (streaks/grades friends can see; excused days stay private) ---------- */
 const DAY_MS = 24 * 3600e3;
 const PTS: Record<string, number> = { f: 10, s: 3, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
-type StatMember = { id: string; city: string; method: string; madhab: string; joined: string; lat?: number | null; lng?: number | null; tz?: string | null };
+type StatMember = { id: string; city: string; method: string; madhab: string; joined: string; created_at?: string; lat?: number | null; lng?: number | null; tz?: string | null };
 function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
   const tz = loc(cfg).tz, d = ymd(now, tz);
   return now < times(cfg, d).fajr ? addDays(d, -1) : d;
@@ -181,11 +181,13 @@ function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
 export function computeStats(m: StatMember, code: (day: string, waqt: string) => string, isEx: (day: string) => boolean, now: Date) {
   const cfg = cfgOf(m), today = appDay(cfg, now);
   const allF = (d: string) => FARDH.every((p) => code(d, p.k).includes("f"));
+  // On the joining day, prayers that began before the person joined only count if logged.
+  const preJoin = (d: string, start: Date) => !!(m.joined === d && m.created_at && start < new Date(m.created_at));
   const state = (d: string) => {
     if (m.joined && d < m.joined) return "na";
     if (isEx(d) && !allF(d)) return "ex";
     const t = times(cfg, d);
-    for (const p of FARDH) if (!code(d, p.k).includes("f") && +now >= +t[p.k] + DAY_MS) return "miss";
+    for (const p of FARDH) if (!code(d, p.k).includes("f") && !preJoin(d, t[p.k]) && +now >= +t[p.k] + DAY_MS) return "miss";
     return allF(d) ? "done" : "open";
   };
   let streak = 0;
@@ -198,7 +200,7 @@ export function computeStats(m: StatMember, code: (day: string, waqt: string) =>
     let due = 0, done = 0, pts = 0;
     for (let d = start; d <= today; d = addDays(d, 1)) {
       const t = times(cfg, d), ex = isEx(d);
-      for (const p of FARDH) { const c = code(d, p.k), f = c.includes("f"); if (now >= t[p.k]) { if (f || !ex) due++; if (f) done++; } for (const ch of c) pts += PTS[ch] || 0; }
+      for (const p of FARDH) { const c = code(d, p.k), f = c.includes("f"); if (now >= t[p.k]) { if (f || (!ex && !preJoin(d, t[p.k]))) due++; if (f) done++; } for (const ch of c) pts += PTS[ch] || 0; }
       for (const ch of code(d, "x")) pts += PTS[ch] || 0;
     }
     return { due, done, pts };
