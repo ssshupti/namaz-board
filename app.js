@@ -212,7 +212,7 @@ const pubIds = () => Object.keys(S.members).filter(isPub);
 const coIds = () => [...new Set([S.myId, ...pubIds(), ...S.groups.flatMap(g => groupIds(g.id))])].filter(id => S.members[id]);
 // Every group shares streaks and today's rings with its members.
 const fullIds = () => new Set(S.groups.flatMap(g => groupIds(g.id)));
-/* Whose today's rings you can see: full-details group mates and public members. */
+/* Whose today's rings you can see: group mates and public members. */
 const seeIds = () => new Set([...fullIds(), ...pubIds()]);
 const curGroup = () => S.gid==="all" ? null : (S.groups.find(g => g.id===S.gid) || null);
 function codeOf(id, ds, k){
@@ -895,7 +895,7 @@ function viewSettings(){
       <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak, grade and today's fardh. My groups see me too.</small></span></label>
       <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>I'm hidden from the Everyone board. My groups still see my record.</small></span></label>
     </fieldset>
-    <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud in full-details groups</label>
+    <label class="check" id="extrasRow"><input type="checkbox" id="f-extras" ${m.showExtras!==false?"checked":""}> Show my sunnah, nafl and tahajjud to my groups</label>
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
@@ -1052,7 +1052,7 @@ function tourSteps(){
     {art:`<div class="tart"><span class="tflame">${flameSvg(true)}</span></div>`, h:"Keep your streaks",
      p:"🔥 grows each day you pray <b>all 5</b> fardh. Below it, <b>6/7</b> means 6 of the 7 fardh since you joined, so every single fardh counts. Travelling, ill or can't pray? Tap <b>Excuse this day</b>: your streak pauses, and <b>only you</b> can see it."},
     {art:`<div class="tart">${["🌍","👥","🔒"].map(e=>`<span class="temo">${e}</span>`).join("")}</div>`, h:"Friends & groups",
-     p:"<b>🌍 Public</b> puts your streak, grade and today's fardh on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share with just the people you choose: <i>streaks only</i> or <i>full details</i>. Invite friends from the Board tab."}
+     p:"<b>🌍 Public</b> puts your streak, grade and today's fardh on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share your 🔥 streak and today's fardh rings with just the people you choose, and you can nudge each other there. Invite friends from the Board tab."}
   ];
 }
 function renderTour(){

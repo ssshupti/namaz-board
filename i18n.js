@@ -76,7 +76,7 @@ const DICT = {
   "Everyone board":"সবার বোর্ড",
   "I'm on the Everyone board: all Namaz Board users see my streak, grade and today's fardh. My groups see me too.":"আমি সবার বোর্ডে আছি: সব ব্যবহারকারী আমার স্ট্রিক, গ্রেড ও আজকের ফরজ দেখে। আমার গ্রুপও দেখে।",
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
-  "Show my sunnah, nafl and tahajjud in full-details groups":"সম্পূর্ণ বিস্তারিত গ্রুপে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
+  "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
   "Language":"ভাষা","Pick my city":"শহর বেছে নিন","📢 Message everyone":"📢 সবাইকে মেসেজ","Message the whole group 📢":"পুরো গ্রুপকে মেসেজ দাও 📢","Sent to everyone 📢":"সবাইকে পাঠানো হয়েছে 📢",
   "One group message per namaz. Try again at the next waqt 😌":"প্রতি নামাজে একটাই গ্রুপ মেসেজ। পরের ওয়াক্তে আবার পাঠাও 😌","→ 📢 everyone ·":"→ 📢 সবাই ·","Give them a nudge 👉":"একটু খোঁচা দাও 👉","Hype them up ✨":"হাইপ দাও ✨","See their month →":"তার পুরো মাস দেখুন →",
