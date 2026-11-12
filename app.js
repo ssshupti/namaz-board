@@ -900,7 +900,7 @@ function viewSettings(){
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
   <div class="panel"><h3>Language</h3>${langPicker()}<p class="note">Alerts on your phone follow this too.</p></div>
-  ${isCodeEmail(S.email) ? (savedCode() ? codeCard(savedCode(), false) : `<section class="panel codecard"><h3>🔑 Your backup code</h3><p>This browser doesn't have your code saved. Make a new one so you can always get back in. Your old code will stop working.</p></section>`)
+  ${isCodeEmail(S.email) ? (savedCode() ? codeCard(savedCode(), false) : `<section class="panel codecard"><h3>🔑 Your Namaz Board code</h3><p>This browser doesn't have your code saved. Make a new one so you can always get back in. Your old code will stop working.</p></section>`)
     + `<div class="btns" style="margin:-6px 0 14px"><button class="ghost" type="button" data-act="newcode">${S.confirmNewCode ? "Tap again: old code stops working" : "Make a new code"}</button></div>` : ""}
   <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button><a class="ghost" href="privacy.html" target="_blank" rel="noopener">Privacy</a></div><p class="note">Signed in as ${esc(emailLabel(S.email))}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button>${meDoc() ? `<button class="ghost danger ${S.confirmDelMe?"sure":""}" type="button" data-act="deleteme">${S.confirmDelMe?"Tap again: delete everything":"Delete my account"}</button>` : ""}</div></div>${watermark()}`;
 }
@@ -1031,7 +1031,7 @@ function inAppBanner(){
 /* ---------- accounts without email ---------- */
 const CODE_DOMAINS = ["namaz-board.invalid", "namaz-board.example.com"];  // keep in sync with the notify function
 const isCodeEmail = e => CODE_DOMAINS.some(d => String(e||"").toLowerCase().endsWith("@"+d));
-const emailLabel = e => isCodeEmail(e) ? "🔑 no email (backup code)" : e;
+const emailLabel = e => isCodeEmail(e) ? "🔑 no email (signs in with a code)" : e;
 function parseCode(c){
   let a = String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,""); if (a.startsWith("NB")) a = a.slice(2);
   return a.length === 20 ? {handle:a.slice(0,8).toLowerCase(), pw:a.slice(8)} : null;
@@ -1047,19 +1047,19 @@ async function signInWithCode(code){
 const savedCode = () => { try { return localStorage.getItem("nb-code") || ""; } catch { return ""; } };
 const saveCode = c => { try { localStorage.setItem("nb-code", c); } catch {} };
 function codeCard(code, fresh){
-  return `<section class="panel codecard"><h3>🔑 ${fresh ? "Save your backup code" : "Your backup code"}</h3>
+  return `<section class="panel codecard"><h3>🔑 ${fresh ? "Save your Namaz Board code" : "Your Namaz Board code"}</h3>
     <p>${fresh ? "This is the only way back into your account on a new phone, or if this browser's data is cleared. Screenshot it or save it somewhere safe." : "Use it to sign in on another phone or after clearing this browser."}</p>
     <div class="codebox" data-notr>${esc(code)}</div>
     <div class="btns"><button class="primary" data-act="copycode" data-code="${esc(code)}">Copy</button>${fresh ? `<button class="ghost" data-act="codesaved">I've saved it ✓</button>` : ""}</div></section>`;
 }
 function viewNoMail(){
-  if (S.loginMode === "restore") return `<form class="panel hero-login" id="restoreForm"><h3>Use a backup code 🔑</h3>
-    <p>Type the code you saved when you made your account.</p>
-    <label class="f">Backup code<input id="rc-code" required autocomplete="off" placeholder="NB-XXXX-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:.06em"></label>
+  if (S.loginMode === "restore") return `<form class="panel hero-login" id="restoreForm"><h3>Sign in with your code 🔑</h3>
+    <p>Type the Namaz Board code you were given when you signed up. It starts with NB.</p>
+    <label class="f">Namaz Board code<input id="rc-code" required autocomplete="off" placeholder="NB-XXXX-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:.06em"></label>
     <div class="btns"><button class="primary" type="submit">Sign in</button><button class="ghost" type="button" data-act="loginback">Back</button></div></form>`;
-  return `<section class="panel hero-login"><h3>Continue without email</h3>
-    <p>You'll get an account with no email or Google, just a <b>backup code</b>.</p>
-    <div class="notice"><span>⚠️ Your account is saved on <b>this device</b>. If you change phones or clear your browser, you'll need your backup code to get back in. Lose the code, and your streak can't be recovered.</span></div>
+  return `<section class="panel hero-login"><h3>Sign up without email</h3>
+    <p>No email or Google needed. Instead, we'll give you a <b>Namaz Board code</b>: your own secret key for signing in.</p>
+    <div class="notice"><span>⚠️ Your account is saved on <b>this device</b>. If you change phones or clear your browser, you'll need your Namaz Board code to get back in. Lose the code, and your streak can't be recovered.</span></div>
     <div class="btns"><button class="primary" data-act="nomailgo">Create my account</button><button class="ghost" data-act="loginback">Back</button></div></section>`;
 }
 function viewLogin(){
@@ -1067,7 +1067,8 @@ function viewLogin(){
   return inAppBanner() + langPicker() + inviteBanner() + `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
-    <p class="altlogin">No Gmail? <button class="linkbtn" data-act="nomail">Continue without email</button> · <button class="linkbtn" data-act="restore">I have a backup code</button></p>
+    <p class="altlogin">No Gmail? <button class="linkbtn" data-act="nomail">Sign up without email</button></p>
+    <p class="altlogin">Signed up without email before? <button class="linkbtn" data-act="restore">Sign in with your Namaz Board code</button></p>
     <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
 }
 function inviteBanner(){
@@ -1172,7 +1173,7 @@ document.addEventListener("click", async e => {
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
   }
   else if (a==="signout"){
-    if (isCodeEmail(S.email) && !S.confirmOut){ S.confirmOut = true; b.textContent = "Saved your backup code? Tap again"; setTimeout(() => { S.confirmOut = false; }, 5000); return; }
+    if (isCodeEmail(S.email) && !S.confirmOut){ S.confirmOut = true; b.textContent = "Saved your Namaz Board code? Tap again"; setTimeout(() => { S.confirmOut = false; }, 5000); return; }
     await S.sb.auth.signOut(); location.reload();
   }
   else if (a==="nomail"){ S.loginMode = "new"; render(); }
