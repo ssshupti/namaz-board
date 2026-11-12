@@ -578,7 +578,7 @@ function viewBoard(){
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
-  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · ${g.mode==="full"?"📖 Full details":"🔥 Streaks only"}</p></div>
+  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · ${g.mode==="full"?"📖 Full details":"🔥 Streaks only"}</p><button class="gcode" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);
@@ -617,10 +617,33 @@ function leaderboard(ids, full){
   });
   return html + `</div><p class="note foot">Ranked by fardh prayed out of fardh due. Excused days never count against anyone, and nobody can see them.</p>`;
 }
+function previewHtml(){
+  const pv = S.preview;
+  if (!pv) return "";
+  if (pv.loading) return `<p class="note">Looking up the group…</p>`;
+  if (!pv.name) return `<p class="note">No group has that code. Check it with your friend.</p>`;
+  return `<div class="gprev"><span class="gpi">👥</span><div><b data-notr>${esc(pv.name)}</b><small>${pv.members} member${pv.members===1?"":"s"} · ${pv.mode==="full"?"📖 Full details":"🔥 Streaks only"}</small></div></div>`;
+}
+async function lookupGroup(code){
+  code = String(code||"").trim().toUpperCase();
+  if (code.length < 6){ S.preview = null; return; }
+  S.preview = {loading:true, code};
+  const {data, error} = await S.sb.rpc("group_preview",{join_code:code});
+  if (S.preview?.code !== code) return;   // they typed something else meanwhile
+  const r = !error && data?.[0];
+  S.preview = r ? {code, name:r.name, members:r.members, mode:r.mode} : {code, name:null, missing:!!error && /function|schema/i.test(error.message||"")};
+  if (S.preview.missing) S.preview = {code, name:code, members:0, mode:""};  // database not updated yet: still allow joining
+}
+function refreshPreview(){
+  const el = $("gPreview"), btn = $("gJoinBtn"); if (!el) return;
+  el.innerHTML = previewHtml();
+  btn.disabled = !S.preview?.name; btn.textContent = S.preview?.name ? `Join ${S.preview.name}` : "Join";
+}
 function groupForm(){
   if (S.gform==="join") return `<form class="panel" id="gJoinForm"><h3>Join a group</h3><p>Ask a friend for their group's 6-letter code, or open the invite link they sent.</p>
-    <label class="f">Group code<input id="g-code" maxlength="6" required autocomplete="off" placeholder="e.g. K7Q2ZP" style="text-transform:uppercase;letter-spacing:.2em"></label>
-    <div class="btns"><button class="primary" type="submit">Join</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
+    <label class="f">Group code<input id="g-code" maxlength="6" required autocomplete="off" placeholder="e.g. K7Q2ZP" value="${esc(S.joinCode||"")}" style="text-transform:uppercase;letter-spacing:.2em"></label>
+    <div id="gPreview">${previewHtml()}</div>
+    <div class="btns"><button class="primary" type="submit" id="gJoinBtn" ${S.preview?.name?"":"disabled"}>${S.preview?.name ? `Join ${esc(S.preview.name)}` : "Join"}</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
   return `<form class="panel" id="gNewForm"><h3>New group 🌸</h3>
     <label class="f">Name<input id="g-name" maxlength="30" required placeholder="Uni friends, Family, Cousins…"></label>
     <fieldset class="vis"><legend>What members can see</legend>
@@ -844,10 +867,14 @@ function langPicker(){
   return `<div class="langpick" data-notr role="group" aria-label="Language"><button type="button" class="${LANG==="en"?"on":""}" data-act="lang" data-lang="en">English</button><button type="button" class="${LANG==="bn"?"on":""}" data-act="lang" data-lang="bn">বাংলা</button></div>`;
 }
 function viewLogin(){
-  return langPicker() + `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
+  return langPicker() + inviteBanner() + `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
     <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
+}
+function inviteBanner(){
+  const pv = S.linkGroup; if (!pv?.name) return "";
+  return `<div class="notice"><span>👥 You're invited to <b data-notr>${esc(pv.name)}</b>. Join the board first, then you'll be asked to join the group.</span></div>`;
 }
 function viewNotInvited(){
   const owner = esc(CONF.ownerName||"the board owner");
@@ -855,10 +882,10 @@ function viewNotInvited(){
     <p>${owner} has been asked to let <b>${esc(S.myRequest.name)}</b> in. This page opens the board by itself once you're approved, so you can close it and come back later.</p>
     <div class="waiting" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="btns"><button class="ghost" data-act="cancelreq">Cancel request</button><button class="ghost" data-act="signout">Use another account</button></div>
-    <p class="note">Signed in as ${esc(S.email)}</p></section>`;
+    <p class="note">Signed in as ${esc(S.email)}</p></section>` + inviteBanner();
   const meta = S.session?.user?.user_metadata || {};
   const guess = meta.given_name || (meta.full_name||"").split(" ")[0] || "";
-  return `<form class="panel" id="reqForm"><h3>Ask to join 🌸</h3>
+  return inviteBanner() + `<form class="panel" id="reqForm"><h3>Ask to join 🌸</h3>
     <p>Namaz Board is invite only. Send a request and ${owner} will approve it.</p>
     <label class="f">Your name<input id="r-name" maxlength="40" required value="${esc(guess)}"></label>
     <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
@@ -1018,7 +1045,7 @@ document.addEventListener("click", async e => {
   }
   else if (a==="gpick"){ S.gid = b.dataset.id; S.gform = null; S.gmanage = false; S.open = null; render(); }
   else if (a==="gnew"){ S.gform = "new"; render(); }
-  else if (a==="gjoin"){ S.gform = "join"; render(); }
+  else if (a==="gjoin"){ S.gform = "join"; S.joinCode = ""; S.preview = null; render(); }
   else if (a==="gcancel"){ S.gform = null; render(); }
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
   else if (a==="ginvite"){
@@ -1088,6 +1115,11 @@ document.addEventListener("change", e => {
   if (e.target.id !== "f-city") return;
   if (e.target.value !== "custom"){ S.geo = null; const c = CITIES[e.target.value]; if (c && $("f-method")) $("f-method").value = c.method; }
 });
+document.addEventListener("input", async e => {
+  if (e.target.id !== "g-code") return;
+  const v = e.target.value.toUpperCase(); S.joinCode = v;
+  await lookupGroup(v); refreshPreview();
+});
 document.addEventListener("change", async e => {
   if (e.target.dataset.qown){ const k = e.target.dataset.qown; if (await saveQaza(k, {owed: Number(e.target.value)||0})) render(); }
 });
@@ -1147,7 +1179,7 @@ document.addEventListener("submit", async e => {
       await loadAll(); S.members[S.myId] ||= rowToMember(data); subscribeLive(); checkPush();
       S.phase = "app"; celebrate(); pushMyStats(); setTimeout(maybeTour, 1200);
       let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
-      if (code) setTimeout(() => joinWithCode(code), 600);
+      if (code) setTimeout(() => openJoin(code), 600);
     }
     S.geo = null; cache.clear(); S.view = "today"; S.dayOff = 0; render(); toast("Saved");
   } catch(err){
@@ -1159,6 +1191,7 @@ async function joinWithCode(code){
   code = String(code||"").trim().toUpperCase(); if (!code) return;
   const {data:gid, error} = await S.sb.rpc("join_group",{join_code:code});
   try { localStorage.removeItem("nb-join"); } catch {}
+  S.joinCode = ""; S.preview = null;
   if (error){ toast(/no group/i.test(error.message) ? "No group has that code. Check it and try again." : "Couldn't join: " + error.message); return; }
   S.gform = null; await syncChanges(); S.gid = gid; S.view = "board"; pushMyStats(); render();
   toast(`Joined ${S.groups.find(g => g.id===gid)?.name || "the group"} 🎉`);
@@ -1188,7 +1221,14 @@ async function afterAuthInner(){
   try { await loadAll(); } catch(e){ S.err = "Couldn't load the board. Check your connection and reload."; S.phase="boot"; render(); return; }
   S.phase = "app"; subscribeLive(); await checkPush(); render(); pushMyStats(); maybeTour();
   let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
-  if (code) await joinWithCode(code);
+  if (code) await openJoin(code);
+}
+/* Opened an invite link: show the group's name and let them tap Join. */
+async function openJoin(code){
+  code = String(code).toUpperCase();
+  try { localStorage.removeItem("nb-join"); } catch {}
+  if (S.groups.some(g => g.code === code)){ S.gid = S.groups.find(g => g.code === code).id; S.view = "board"; render(); return; }
+  S.view = "board"; S.gform = "join"; S.joinCode = code; await lookupGroup(code); render(); scrollTo({top:0});
 }
 async function boot(){
   render();
@@ -1208,6 +1248,8 @@ async function boot(){
   S.sb.auth.onAuthStateChange((ev) => { if (ev==="SIGNED_IN" && S.phase!=="app" && S.phase!=="join") afterAuth(); });
   const qs = new URLSearchParams(location.search), qv = qs.get("view"), qg = qs.get("g");
   if (qg){ try { localStorage.setItem("nb-join", qg.toUpperCase()); } catch {} }
+  { let c = null; try { c = localStorage.getItem("nb-join"); } catch {}
+    if (c) S.sb.rpc("group_preview",{join_code:c}).then(({data}) => { if (data?.[0]){ S.linkGroup = data[0]; if (S.phase!=="app") render(); } }, () => {}); }
   if (qv || qg){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; }
   await afterAuth();
   if (meDoc()){

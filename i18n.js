@@ -78,7 +78,9 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud in full-details groups":"সম্পূর্ণ বিস্তারিত গ্রুপে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","Alerts on your phone follow this too.":"ফোনের অ্যালার্টও এই ভাষায় আসবে।",
+  "Language":"ভাষা","Looking up the group…":"গ্রুপ খোঁজা হচ্ছে…","No group has that code. Check it with your friend.":"এই কোডে কোনো গ্রুপ নেই। বন্ধুর কাছ থেকে আবার দেখে নিন।",
+  "Code":"কোড","👥 You're invited to":"👥 আপনাকে আমন্ত্রণ জানানো হয়েছে","Join the board first, then you'll be asked to join the group.":"আগে বোর্ডে যোগ দিন, তারপর গ্রুপে যোগ দিতে বলা হবে।",
+  "No group has that code. Check it and try again.":"এই কোডে কোনো গ্রুপ নেই। দেখে আবার চেষ্টা করুন।","Alerts on your phone follow this too.":"ফোনের অ্যালার্টও এই ভাষায় আসবে।",
   // alerts
   "Namaz alerts":"নামাজের অ্যালার্ট","🔔 Alerts are on for this phone.":"🔔 এই ফোনে অ্যালার্ট চালু আছে।","Send a test":"পরীক্ষা পাঠান","Turn off on this phone":"এই ফোনে বন্ধ করুন",
   "Turn alerts on on this phone. You can do this on each device you use.":"এই ফোনে অ্যালার্ট চালু করুন। প্রতিটি ডিভাইসে আলাদাভাবে চালু করতে হয়।",
@@ -123,6 +125,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Join (.+)$/, (_,n) => `${n}-এ যোগ দিন`],
+  [/^(\d+) members? · (📖 Full details|🔥 Streaks only)$/, (_,n,m) => `${n} জন সদস্য · ${m.startsWith("📖")?"📖 সম্পূর্ণ বিস্তারিত":"🔥 শুধু স্ট্রিক"}`],
   [/^Every fardh so far ✨ (\d+)%$/, (_,p) => `এ পর্যন্ত সব ফরজ ✨ ${p}%`],
   [/^(\d+)% · (\d+) missed$/, (_,p,n) => `${p}% · ${n}টি বাদ গেছে`],
   [/^💌 ?(\d+) (?:person wants|people want) to join$/, (_,n) => `💌 ${n} জন যোগ দিতে চান`],

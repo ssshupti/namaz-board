@@ -398,3 +398,9 @@ a.ghost{text-decoration:none;color:var(--ink);display:inline-flex;align-items:ce
 .langpick button.on{background:var(--accent);color:var(--accent-ink)}
 #main > .langpick{display:flex;width:max-content;margin:0 auto 12px}
 html[lang="bn"] .bn{display:none}
+.gcode{display:inline-flex;align-items:center;gap:6px;margin-top:6px;border:2px dashed var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.gcode b{color:var(--ink);letter-spacing:.15em;font-family:var(--display);font-size:15px}
+.gprev{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:18px;padding:12px 14px;margin:2px 0 6px}
+.gprev .gpi{font-size:26px}
+.gprev b{display:block;font-family:var(--display);font-size:20px;line-height:1.1}
+.gprev small{color:var(--muted);font-weight:700}
