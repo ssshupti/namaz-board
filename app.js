@@ -1110,13 +1110,13 @@ function qazaPanel(){
   const rows = QAZA_W.map(([k,l]) => { const q = S.qaza[k] || {owed:0, done:0}, a = auto[k] || 0, total = q.owed + a, done = Math.min(total, q.done), left = total - done;
     owedAll += total; doneAll += done;
     return `<div class="qrow"><b>${l}</b>
-      <label class="qown">Before the app<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
+      <label class="qown">Missed before joining<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
       <span class="qleft num">${left ? `${left} left` : total ? "All made up ✨" : "–"}${a ? `<small>+${a} missed in the app</small>` : ""}</span>
       <button class="ghost" data-act="qdone" data-k="${k}" ${left?"":"disabled"}>✓ Made one up</button></div>`; }).join("");
   return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Keep count of missed prayers you're making up. Only you can see this list.</p>
     ${owedAll ? `<div class="bar"><i style="width:${(doneAll/owedAll*100).toFixed(1)}%"></i></div><p class="note num">${doneAll} of ${owedAll} made up</p>` : ""}
     <div class="qlist">${rows}</div>
-    <p class="note">Fardh you miss in the app are added here by themselves. Type any you owe from <b>before the app</b>, then tap <b>Made one up</b> each time you pray one. For a missed fardh from today or yesterday, you can also tap <b>🤲 Prayed as qaza</b> on that namaz.</p></section>`;
+    <p class="note">Fardh you miss in the app are added here by themselves. Type how many you missed <b>before joining</b> (from past years, for example), then tap <b>Made one up</b> each time you pray one. For a missed fardh from today or yesterday, you can also tap <b>🤲 Prayed as qaza</b> on that namaz.</p></section>`;
 }
 async function saveQaza(k, patch){
   const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch}, a = autoMissed()[k] || 0;
