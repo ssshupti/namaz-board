@@ -484,3 +484,8 @@ html[lang="bn"] .bn{display:none}
 .qrow .qown{justify-self:end}
 .qrow .qleft{grid-column:1/-1;text-align:left;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .qleft small{display:inline}
+.invitebox h3{margin-bottom:8px}
+.invlink{font-size:13px;font-weight:700;color:var(--muted);background:var(--off);border-radius:12px;padding:9px 12px;overflow-wrap:anywhere;margin-bottom:12px}
+.invbtns{display:flex;flex-wrap:wrap;gap:8px}
+.invbtns > *{flex:1 1 auto}
+.ghost.on{background:var(--off)}

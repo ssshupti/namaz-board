@@ -870,7 +870,20 @@ function viewBoard(){
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
   let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy the code">Code <b data-notr>${g.code}</b> ⧉</button></div>
-    <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
+    <div class="btns"><button class="ghost ${S.inviteOpen?"on":""}" data-act="ginvitemenu" aria-expanded="${!!S.inviteOpen}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
+  if (S.inviteOpen){
+    const msg = encodeURIComponent(`Join my Namaz Board group "${g.name}" 🌸 ${link}`);
+    html += `<section class="panel invitebox"><h3>Invite to <span data-notr>${esc(g.name)}</span></h3>
+      <div class="invlink" data-notr>${esc(link)}</div>
+      <div class="invbtns">
+        <button class="primary" data-act="ginvite" data-link="${esc(link)}">🔗 Copy link</button>
+        <a class="ghost btnlink" href="https://wa.me/?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="ghost btnlink" href="https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Join my Namaz Board group 🌸")}" target="_blank" rel="noopener">Telegram</a>
+        <a class="ghost btnlink" href="mailto:?subject=${encodeURIComponent("Join my Namaz Board group 🌸")}&body=${msg}">Email</a>
+        ${navigator.share ? `<button class="ghost" data-act="gshare" data-link="${esc(link)}">More…</button>` : ""}
+      </div>
+      <p class="note">Or tell them the code <b data-notr>${g.code}</b> to type in <b>Join a group</b>.</p></section>`;
+  }
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);
   if (sq !== null) html += `<section class="squad"><div class="flame ${sq?"lit":""}">${flameSvg(true)}<span class="n num">${sq}</span></div>
@@ -1107,20 +1120,19 @@ function qazaPanel(){
   if (!S.qazaReady) return "";
   const auto = autoMissed();
   let owedAll = 0, doneAll = 0;
-  const rows = QAZA_W.map(([k,l]) => { const q = S.qaza[k] || {owed:0, done:0}, a = auto[k] || 0, total = q.owed + a, done = Math.min(total, q.done), left = total - done;
-    owedAll += total; doneAll += done;
-    return `<div class="qrow"><b>${l}</b>
-      <label class="qown">Missed before joining<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
-      <span class="qleft num">${left ? `${left} left` : total ? "All made up ✨" : "–"}${a ? `<small>+${a} missed in the app</small>` : ""}</span>
+  const rows = P.map(p => { const k = p.k, a = auto[k] || 0, done = Math.min(a, S.qaza[k]?.done || 0), left = a - done;
+    owedAll += a; doneAll += done;
+    return `<div class="qrow"><b>${p.en}</b>
+      <span class="qleft num">${left ? `${left} left` : a ? "All made up ✨" : "–"}${a ? `<small>${a} missed since you joined</small>` : ""}</span>
       <button class="ghost" data-act="qdone" data-k="${k}" ${left?"":"disabled"}>✓ Made one up</button></div>`; }).join("");
-  return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Keep count of missed prayers you're making up. Only you can see this list.</p>
-    ${owedAll ? `<div class="bar"><i style="width:${(doneAll/owedAll*100).toFixed(1)}%"></i></div><p class="note num">${doneAll} of ${owedAll} made up</p>` : ""}
+  return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Fardh you've missed since joining show up here by themselves. Tap <b>Made one up</b> each time you pray one as qaza. Only you can see this list.</p>
+    ${owedAll ? `<div class="bar"><i style="width:${(doneAll/owedAll*100).toFixed(1)}%"></i></div><p class="note num">${doneAll} of ${owedAll} made up</p>` : `<p class="note">No missed fardh so far. MashaAllah ✨</p>`}
     <div class="qlist">${rows}</div>
-    <p class="note">Fardh you miss in the app are added here by themselves. Type how many you missed <b>before joining</b> (from past years, for example), then tap <b>Made one up</b> each time you pray one. For a missed fardh from today or yesterday, you can also tap <b>🤲 Prayed as qaza</b> on that namaz.</p></section>`;
+    <p class="note">Missed one today or yesterday? You can also tap <b>🤲 Prayed as qaza</b> on that namaz.</p></section>`;
 }
 async function saveQaza(k, patch){
-  const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch}, a = autoMissed()[k] || 0;
-  q.owed = Math.max(0, Math.min(100000, q.owed|0)); q.done = Math.max(0, Math.min(q.owed + a, q.done|0));
+  const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch, owed:0}, a = autoMissed()[k] || 0;
+  q.done = Math.max(0, Math.min(a, q.done|0));
   const {error} = await S.sb.from("qaza").upsert({user_id:S.myId, waqt:k, owed:q.owed, done:q.done, updated_at:new Date().toISOString()}, {onConflict:"user_id,waqt"});
   if (error){ toast("Couldn't save that."); return false; }
   S.qaza[k] = q; return true;
@@ -1529,7 +1541,7 @@ document.addEventListener("click", async e => {
     try { localStorage.clear(); } catch {}
     await S.sb.auth.signOut(); toast("Your account and logs were deleted."); setTimeout(() => location.reload(), 1200);
   }
-  else if (a==="qdone"){ const k = b.dataset.k, q = S.qaza[k] || {owed:0, done:0}, total = q.owed + (autoMissed()[k]||0);
+  else if (a==="qdone"){ const k = b.dataset.k, q = S.qaza[k] || {owed:0, done:0}, total = autoMissed()[k]||0;
     if (await saveQaza(k, {done:q.done+1})){ render(); toast(total - q.done - 1 > 0 ? "Made up ✓ MashaAllah" : "All made up ✨ MashaAllah"); } }
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
@@ -1580,15 +1592,16 @@ document.addEventListener("click", async e => {
     on ? S.excused.delete(ds) : S.excused.add(ds);
     pushMyStats(); render(); toast(on ? "Excuse removed" : "⏸ Day excused. Your streak is paused. Only you can see this.");
   }
-  else if (a==="gpick"){ S.gid = b.dataset.id; S.gform = null; S.gmanage = false; S.open = null; render(); }
+  else if (a==="gpick"){ S.inviteOpen = false; S.gid = b.dataset.id; S.gform = null; S.gmanage = false; S.open = null; render(); }
   else if (a==="gnew"){ S.gform = "new"; render(); }
   else if (a==="gjoin"){ S.gform = "join"; S.joinCode = ""; S.preview = null; render(); }
   else if (a==="gcancel"){ S.gform = null; render(); }
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
+  else if (a==="ginvitemenu"){ S.inviteOpen = !S.inviteOpen; render(); }
+  else if (a==="gshare"){ try { await navigator.share({title:"Join my Namaz Board group 🌸", url:b.dataset.link}); } catch {} }
   else if (a==="ginvite"){
-    // Just the link: pasted into WhatsApp, Messenger etc. it becomes a tappable card that opens the group.
-    const link = b.dataset.link, phone = matchMedia("(pointer: coarse)").matches;
-    if (phone && navigator.share){ try { await navigator.share({title:"Join my Namaz Board group 🌸", url:link}); } catch {} return; }
+    // Just the link: pasted into a chat it becomes a tappable card that opens the group.
+    const link = b.dataset.link;
     try { await navigator.clipboard.writeText(link); toast("Invite link copied 🔗 Paste it in a chat. Tapping it opens the group."); } catch { toast(link); }
   }
   else if (a==="gcopy"){
