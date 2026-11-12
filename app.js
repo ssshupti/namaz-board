@@ -869,7 +869,7 @@ function viewBoard(){
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
-  let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite link">Code <b data-notr>${g.code}</b> ⧉</button></div>
+  let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy the code">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);
@@ -1081,7 +1081,7 @@ async function openRecap(){
   const blob = await new Promise(r => canvas.toBlob(r, "image/png")); S.recapBlob = blob;
   let el = $("recapDlg"); if (!el){ el = document.createElement("div"); el.id = "recapDlg"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
   if (S.recapUrl) URL.revokeObjectURL(S.recapUrl); S.recapUrl = URL.createObjectURL(blob);
-  el.innerHTML = `<div class="tcard recap"><img src="${S.recapUrl}" alt="Your namaz week card"><div class="btns"><button class="primary" data-act="recapshare">Share 📸</button><button class="ghost" data-act="recapclose">Close</button></div></div>`;
+  el.innerHTML = `<div class="tcard recap"><img src="${S.recapUrl}" alt="Your namaz week card"><div class="btns"><button class="primary" data-act="recapshare">${matchMedia("(pointer: coarse)").matches ? "Share 📸" : "Download ⬇️"}</button><button class="ghost" data-act="recapclose">Close</button></div></div>`;
 }
 function badgeShelf(best){
   return `<section class="panel"><h3>Badges</h3><p>Earned by praying all 5 fardh for days in a row. Your best streak: <b>${best}</b>.</p>
@@ -1449,7 +1449,7 @@ document.addEventListener("click", async e => {
   else if (a==="recapclose"){ $("recapDlg")?.remove(); }
   else if (a==="recapshare"){
     const file = new File([S.recapBlob], "namaz-week.png", {type:"image/png"});
-    if (navigator.canShare?.({files:[file]})){ try { await navigator.share({files:[file]}); } catch {} return; }
+    if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.({files:[file]})){ try { await navigator.share({files:[file]}); } catch {} return; }
     const a2 = document.createElement("a"); a2.href = S.recapUrl; a2.download = "namaz-week.png"; document.body.appendChild(a2); a2.click(); a2.remove(); toast("Saved to your downloads 📸");
   }
   else if (a==="leaveclose"){ $("leave")?.remove(); }
@@ -1587,15 +1587,13 @@ document.addEventListener("click", async e => {
   else if (a==="gcancel"){ S.gform = null; render(); }
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
   else if (a==="ginvite"){
-    const link = b.dataset.link, text = `Join my Namaz Board group 🌸 ${link} (code ${b.dataset.code})`;
-    // Phones: the share sheet (WhatsApp, Messenger…). Computers: just copy, since their share menus rarely have chat apps.
-    const phone = matchMedia("(pointer: coarse)").matches;
-    if (phone && navigator.share){ try { await navigator.share({title:"Namaz Board", text}); } catch {} return; }
-    try { await navigator.clipboard.writeText(text); toast("Invite link copied. Paste it to your friends."); } catch { toast(`Group code: ${b.dataset.code}`); }
+    // Just the link: pasted into WhatsApp, Messenger etc. it becomes a tappable card that opens the group.
+    const link = b.dataset.link, phone = matchMedia("(pointer: coarse)").matches;
+    if (phone && navigator.share){ try { await navigator.share({title:"Join my Namaz Board group 🌸", url:link}); } catch {} return; }
+    try { await navigator.clipboard.writeText(link); toast("Invite link copied 🔗 Paste it in a chat. Tapping it opens the group."); } catch { toast(link); }
   }
   else if (a==="gcopy"){
-    const text = `Join my Namaz Board group 🌸 ${b.dataset.link} (code ${b.dataset.code})`;
-    try { await navigator.clipboard.writeText(text); toast("Invite link copied. Paste it to your friends."); } catch { toast(`Group code: ${b.dataset.code}`); }
+    try { await navigator.clipboard.writeText(b.dataset.code); toast(`Code ${b.dataset.code} copied. Friends type it in Join a group.`); } catch { toast(`Group code: ${b.dataset.code}`); }
   }
   else if (a==="gkick"){
     const id = b.dataset.id, g = curGroup();
