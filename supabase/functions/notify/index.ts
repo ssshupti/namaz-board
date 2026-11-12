@@ -240,6 +240,32 @@ export function computeStats(m: StatMember, code: (day: string, waqt: string) =>
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, x-client-info, apikey, content-type" } });
 
+/* Nudge templates. Keep in sync with NUDGES in app.js. {w} = the namaz name. */
+export const NUDGE_TEXT: Record<string, [string, string]> = {
+  n1: ["⏰ {w} is calling, pick up 📞", "⏰ {w} ডাকছে, ফোনটা ধরো 📞"],
+  n2: ["🔥 ur streak is on life support", "🔥 তোমার স্ট্রিক আইসিইউতে"],
+  n3: ["👀 that {w} ring is looking kinda empty", "👀 {w}-এর রিংটা কিন্তু ফাঁকা"],
+  n4: ["🧎 pray {w} w me? 🤝", "🧎 একসাথে {w} পড়বা? 🤝"],
+  n5: ["🫵 no cap, go pray {w}", "🫵 সত্যি বলছি, {w} পড়ে আসো"],
+  h1: ["🌸 MashaAllah, u ate that", "🌸 মাশাআল্লাহ, ফাটিয়ে দিছো"],
+  h2: ["💅 slay (spiritually)", "💅 স্লে (আধ্যাত্মিকভাবে)"],
+  h3: ["👑 main character energy", "👑 মেইন ক্যারেক্টার এনার্জি"],
+  h4: ["🔥 streak go brrr", "🔥 স্ট্রিক চলছে ধুমসে"],
+  h5: ["🫶 proud of u fr", "🫶 সত্যি তোমার জন্য গর্বিত"],
+  r1: ["🤲 JazakAllah khair bestie", "🤲 জাযাকাল্লাহ খাইর দোস্ত"],
+  r2: ["🏃 omw to the musalla", "🏃 জায়নামাজের দিকে যাচ্ছি"],
+  r3: ["✅ done & dusted", "✅ পড়া শেষ"],
+  r4: ["😭 ok ok going", "😭 আচ্ছা আচ্ছা যাচ্ছি"],
+};
+const WAQT_NAME: Record<string, [string, string]> = { fajr: ["Fajr", "ফজর"], dhuhr: ["Dhuhr", "যোহর"], asr: ["Asr", "আসর"], maghrib: ["Maghrib", "মাগরিব"], isha: ["Isha", "এশা"] };
+export function nudgeMessage(kind: string, waqt: string, from: string, bn: boolean) {
+  const i = bn ? 1 : 0, body = (NUDGE_TEXT[kind]?.[i] ?? "👋").replaceAll("{w}", WAQT_NAME[waqt]?.[i] ?? waqt);
+  const title = kind[0] === "r" ? (bn ? `💬 ${from} উত্তর দিল` : `💬 ${from} replied`)
+    : kind[0] === "h" ? (bn ? `✨ ${from} তোমাকে হাইপ দিল` : `✨ ${from} is hyping u`)
+    : (bn ? `👉 ${from} তোমাকে খোঁচা দিল` : `👉 ${from} nudged u`);
+  return { title, body };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return json({ ok: true });
   const env = (k: string) => (Deno.env.get(k) ?? "").trim();
@@ -326,9 +352,27 @@ Deno.serve(async (req) => {
     await db.from("join_requests").update({ notified: true }).in("user_id", newReqs.map((r) => r.user_id));
   }
 
+  // Nudges from friends: push each one once, within a few minutes of sending.
+  let nudgeSent = 0;
+  const { data: nudges } = await db.from("nudges").select("id,from_id,to_id,kind,waqt,group_id")
+    .eq("pushed", false).gte("created_at", new Date(+now - 30 * 60e3).toISOString()).limit(200);
+  if (nudges?.length) {
+    await db.from("nudges").update({ pushed: true }).in("id", nudges.map((n) => n.id));
+    const people = [...new Set(nudges.flatMap((n) => [n.from_id, n.to_id]))];
+    const { data: ms } = await db.from("members").select("*").in("id", people);
+    const byId = new Map((ms ?? []).map((m) => [m.id, m]));
+    for (const n of nudges) {
+      const to = byId.get(n.to_id), from = byId.get(n.from_id);
+      if (!to || !from || inQuiet(to as Member, now)) continue;
+      const { title, body } = nudgeMessage(n.kind, n.waqt, from.name || "A friend", to.lang === "bn");
+      nudgeSent += await send(n.to_id, title, body, `nudge-${n.id}`, `?view=board&gid=${n.group_id}`);
+    }
+  }
+  await db.from("nudges").delete().lt("created_at", new Date(+now - 7 * 86400e3).toISOString());
+
   const { data: subs } = await db.from("push_subscriptions").select("user_id");
   const ids = [...new Set((subs ?? []).map((s) => s.user_id))];
-  if (!ids.length) return json({ checked: 0, sent: reqSent, statsUpdated });
+  if (!ids.length) return json({ checked: 0, sent: reqSent + nudgeSent, statsUpdated });
   const { data: members } = await db.from("members").select("*").in("id", ids);
   const since = addDays(now.toISOString().slice(0, 10), -2);
   const { data: logs } = await db.from("logs").select("user_id,day,waqt,code").in("user_id", ids).gte("day", since);
@@ -350,5 +394,5 @@ Deno.serve(async (req) => {
   }
   // Keep the sent log small.
   await db.from("notify_sent").delete().lt("day", addDays(now.toISOString().slice(0, 10), -7));
-  return json({ checked: members?.length ?? 0, sent: sent + reqSent, statsUpdated });
+  return json({ checked: members?.length ?? 0, sent: sent + reqSent + nudgeSent, statsUpdated });
 });
