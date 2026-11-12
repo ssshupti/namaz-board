@@ -393,10 +393,11 @@ Deno.serve(async (req) => {
 
   // Nudges from friends: push each one once, within a few minutes of sending.
   let nudgeSent = 0;
-  const { data: nudges } = await db.from("nudges").select("id,from_id,to_id,kind,waqt,group_id")
-    .eq("pushed", false).gte("created_at", new Date(+now - 30 * 60e3).toISOString()).limit(200);
+  // Claim and mark in one step, so two overlapping runs never push the same nudge twice.
+  const { data: nudges } = await db.from("nudges").update({ pushed: true })
+    .eq("pushed", false).gte("created_at", new Date(+now - 30 * 60e3).toISOString())
+    .select("id,from_id,to_id,kind,waqt,group_id");
   if (nudges?.length) {
-    await db.from("nudges").update({ pushed: true }).in("id", nudges.map((n) => n.id));
     // Group messages go to every member except the sender.
     const gids = [...new Set(nudges.filter((n) => !n.to_id).map((n) => n.group_id))];
     const { data: gms } = gids.length ? await db.from("group_members").select("group_id,user_id").in("group_id", gids) : { data: [] };

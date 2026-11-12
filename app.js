@@ -384,6 +384,7 @@ async function syncChanges(){
   for (const r of mem) next[r.id] = rowToMember(r, S.members[r.id]);
   S.members = next;
   await loadGroups();
+  await loadNudges();   // nudges sent while the app was in the background
   for (let from=0; ; from+=1000){
     const {data, error} = await S.sb.from("logs").select("user_id,day,waqt,code,updated_at").gt("updated_at", S.lastSync).order("updated_at").range(from, from+999);
     if (error) throw error;
@@ -619,7 +620,7 @@ function nudgeSheet(){
 function nudgeFeed(gid){
   if (S.noNudges) return "";
   const list = S.nudges.filter(n => n.group_id===gid).slice(0,12);
-  const allBtn = `<button class="allbtn" data-act="nudgeall" data-gid="${esc(gid)}">📢 Message everyone</button>`;
+  const allBtn = groupIds(gid).length > 1 ? `<button class="allbtn" data-act="nudgeall" data-gid="${esc(gid)}">📢 Message everyone</button>` : "";
   if (!list.length) return `<section class="feed"><div class="sechead"><h3>💬 Nudges</h3>${allBtn}</div><p class="note">Tap a friend's ring above to nudge them or hype them up.</p></section>`;
   const replied = new Set(S.nudges.filter(n => n.reply_to && n.from_id===S.myId).map(n => n.reply_to));
   const nm = id => id===S.myId ? "You" : esc(S.members[id]?.name || "Someone");
@@ -725,7 +726,7 @@ function viewBoard(){
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
-  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite link">Code <b data-notr>${g.code}</b> ⧉</button></div>
+  let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite link">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);

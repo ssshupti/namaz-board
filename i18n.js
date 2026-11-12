@@ -78,7 +78,7 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","No Gmail?":"Gmail নেই?","Sign up without email":"ইমেইল ছাড়া সাইন আপ করুন","Signed up without email before?":"আগে ইমেইল ছাড়া সাইন আপ করেছেন?","Sign in with your Namaz Board code":"নামাজ বোর্ড কোড দিয়ে সাইন ইন করুন",
+  "Language":"ভাষা","🌙 Last third of the night · best time for tahajjud":"🌙 রাতের শেষ তৃতীয়াংশ · তাহাজ্জুদের উত্তম সময়","No Gmail?":"Gmail নেই?","Sign up without email":"ইমেইল ছাড়া সাইন আপ করুন","Signed up without email before?":"আগে ইমেইল ছাড়া সাইন আপ করেছেন?","Sign in with your Namaz Board code":"নামাজ বোর্ড কোড দিয়ে সাইন ইন করুন",
   "No email or Google needed. Instead, we'll give you a":"ইমেইল বা Google লাগবে না। বদলে আপনি পাবেন একটি","Namaz Board code":"নামাজ বোর্ড কোড",": your own secret key for signing in.":": সাইন ইন করার জন্য আপনার নিজের গোপন চাবি।",
   "⚠️ Your account is saved on":"⚠️ আপনার অ্যাকাউন্ট সেভ থাকবে","this device":"এই ডিভাইসে",
   ". If you change phones or clear your browser, you'll need your Namaz Board code to get back in. Lose the code, and your streak can't be recovered.":"। ফোন বদলালে বা ব্রাউজার মুছলে আবার ঢুকতে ব্যাকআপ কোড লাগবে। কোড হারালে স্ট্রিক আর ফেরত পাওয়া যাবে না।",
@@ -224,7 +224,7 @@ function tr(text){
   if (out == null) for (const [re, fn] of RULES){ const m = core.match(re); if (m){ out = fn(...m); break; } }
   return lead + toBnDigits(dates(out ?? core)) + trail;
 }
-const SKIP = '[data-notr], .pname, .fn, .av, .gchip:not(.add):not([data-id=all]), .ghead h3, .mrow .n, .reqrow .who b, .reqrow .who p, .pod .nm, script, style, textarea, input, .wm, .row1';
+const SKIP = '[data-notr], .pname, .fn, .av, .gchip:not(.add):not([data-id=all]), .mrow .n, .reqrow .who b, .reqrow .who p, .pod .nm, script, style, textarea, input, .wm, .row1';
 function translateTree(root){
   if (!root) return;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode: n =>

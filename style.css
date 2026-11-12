@@ -455,3 +455,5 @@ html[lang="bn"] .bn{display:none}
 .linkbtn{border:0;background:none;padding:2px 0;font:inherit;font-weight:800;color:var(--rose);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .codecard{border:2px dashed var(--gold)}
 .codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(12px,4vw,19px);font-weight:700;text-align:center;padding:14px 8px;border-radius:16px;background:var(--off);margin:8px 0 12px;white-space:nowrap;overflow-x:auto;user-select:all}
+.brand h1{white-space:nowrap}
+@media (max-width:360px){.brand h1{font-size:21px}.brand p,#hello{font-size:12px}}

@@ -121,7 +121,13 @@ drop policy if exists sub_own on public.push_subscriptions;
 create policy sub_own on public.push_subscriptions for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Live updates for the board.
-alter publication supabase_realtime add table public.members, public.logs;
+do $$ declare t text; begin
+  foreach t in array array['members','logs'] loop
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
 
 -- Needed for the every-minute notification job.
 create extension if not exists pg_cron;
