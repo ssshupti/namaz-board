@@ -173,7 +173,8 @@ const groupIds = gid => (S.gmembers[gid] || []).filter(id => S.members[id]);
 const isPub = id => S.members[id]?.isPublic !== false;
 const pubIds = () => Object.keys(S.members).filter(isPub);
 const coIds = () => [...new Set([S.myId, ...pubIds(), ...S.groups.flatMap(g => groupIds(g.id))])].filter(id => S.members[id]);
-const fullIds = () => new Set(S.groups.filter(g => g.mode==="full").flatMap(g => groupIds(g.id)));
+// Every group shares streaks and today's rings with its members.
+const fullIds = () => new Set(S.groups.flatMap(g => groupIds(g.id)));
 /* Whose today's rings you can see: full-details group mates and public members. */
 const seeIds = () => new Set([...fullIds(), ...pubIds()]);
 const curGroup = () => S.gid==="all" ? null : (S.groups.find(g => g.id===S.gid) || null);
@@ -585,13 +586,13 @@ function viewBoard(){
     <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
-  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · ${g.mode==="full"?"📖 Full details":"🔥 Streaks only"}</p><button class="gcode" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite">Code <b data-notr>${g.code}</b> ⧉</button></div>
+  let html = chips + `<section class="ghead"><div><h3>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}" title="Copy invite">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost" data-act="ginvite" data-link="${esc(link)}" data-code="${g.code}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.gmanage) html += manageGroup(g);
   const sq = groupStreak(g.id);
   if (sq !== null) html += `<section class="squad"><div class="flame ${sq?"lit":""}">${flameSvg(true)}<span class="n num">${sq}</span></div>
     <div><h3>Group streak · ${sq} day${sq===1?"":"s"}</h3><p>${sq ? "As long as the shortest streak in the group. Keep each other going!" : "Starts when everyone has a streak going."}</p></div></section>`;
-  return html + ringStrip(ids, "Today in " + esc(g.name), g.id) + leaderboard(ids, g.mode==="full");
+  return html + ringStrip(ids, "Today in " + esc(g.name), g.id) + leaderboard(ids, true);
 }
 function everyoneBoard(){
   const ids = pubIds();
@@ -629,7 +630,7 @@ function previewHtml(){
   if (!pv) return "";
   if (pv.loading) return `<p class="note">Looking up the group…</p>`;
   if (!pv.name) return `<p class="note">No group has that code. Check it with your friend.</p>`;
-  return `<div class="gprev"><span class="gpi">👥</span><div><b data-notr>${esc(pv.name)}</b><small>${pv.members} member${pv.members===1?"":"s"} · ${pv.mode==="full"?"📖 Full details":"🔥 Streaks only"}</small></div></div>`;
+  return `<div class="gprev"><span class="gpi">👥</span><div><b data-notr>${esc(pv.name)}</b><small>${pv.members} member${pv.members===1?"":"s"} · 🔥 Streaks & rings</small></div></div>`;
 }
 async function lookupGroup(code){
   code = String(code||"").trim().toUpperCase();
@@ -653,22 +654,15 @@ function groupForm(){
     <div class="btns"><button class="primary" type="submit" id="gJoinBtn" ${S.preview?.name?"":"disabled"}>${S.preview?.name ? `Join ${esc(S.preview.name)}` : "Join"}</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
   return `<form class="panel" id="gNewForm"><h3>New group 🌸</h3>
     <label class="f">Name<input id="g-name" maxlength="30" required placeholder="Uni friends, Family, Cousins…"></label>
-    <fieldset class="vis"><legend>What members can see</legend>
-      <label><input type="radio" name="g-mode" id="g-summary" value="summary" checked><span><b>🔥 Streaks only</b><small>Streaks, grades and points. No daily details. Best for mixed or bigger groups.</small></span></label>
-      <label><input type="radio" name="g-mode" id="g-full" value="full"><span><b>📖 Full details</b><small>Also today's rings, gradesheets and calendars. Best for close friends.</small></span></label>
-    </fieldset>
+    <p class="note">Everyone in the group sees each other's 🔥 streak and today's fardh rings.</p>
     <div class="btns"><button class="primary" type="submit">Create</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
 }
 function manageGroup(g){
   const isOwner = g.owner===S.myId, ids = groupIds(g.id);
-  if (!isOwner) return `<section class="panel"><p>Created by ${esc(S.members[g.owner]?.name || "someone")}. ${g.mode==="full" ? "Members see each other's daily details." : "Members see streaks and grades only."}</p>
+  if (!isOwner) return `<section class="panel"><p>Created by ${esc(S.members[g.owner]?.name || "someone")}. Members see each other's 🔥 streak and today's fardh rings.</p>
     <div class="btns"><button class="ghost danger ${S.confirmLeave===g.id?"sure":""}" data-act="gleave" data-id="${g.id}">${S.confirmLeave===g.id?"Tap again to leave":"Leave group"}</button></div></section>`;
   return `<form class="panel" id="gEditForm" data-id="${g.id}"><h3>Manage group</h3>
     <label class="f">Name<input id="ge-name" maxlength="30" required value="${esc(g.name)}"></label>
-    <fieldset class="vis"><legend>What members can see</legend>
-      <label><input type="radio" name="ge-mode" id="ge-summary" value="summary" ${g.mode!=="full"?"checked":""}><span><b>🔥 Streaks only</b><small>No daily details.</small></span></label>
-      <label><input type="radio" name="ge-mode" id="ge-full" value="full" ${g.mode==="full"?"checked":""}><span><b>📖 Full details</b><small>Rings, gradesheets and calendars too.</small></span></label>
-    </fieldset>
     <div class="btns"><button class="primary" type="submit">Save</button></div>
     <div class="label">Members</div>
     <div class="mlist">${ids.map(id => `<div class="mrow">${avatar(id,S.members[id].name)}<span class="n">${esc(S.members[id].name||"Someone")}${id===S.myId?" (you)":""}</span>${id===S.myId?"":`<button type="button" data-act="gkick" data-id="${id}" class="${S.confirmKick===id?"sure":""}">${S.confirmKick===id?"Tap to confirm":"Remove"}</button>`}</div>`).join("")}</div>
@@ -1151,7 +1145,7 @@ document.addEventListener("submit", async e => {
   }
   if (e.target.id === "gNewForm"){
     const name = $("g-name").value.trim().slice(0,30); if (!name) return;
-    const mode = $("g-full").checked ? "full" : "summary";
+    const mode = "full";
     const {data, error} = await S.sb.from("groups").insert({name, mode, owner:S.myId}).select().single();
     if (error){ toast("Couldn't create it: " + error.message); return; }
     S.gform = null; await syncChanges(); S.gid = data.id; pushMyStats(); render(); toast("Group created 🌸 Tap Invite to share it.");
@@ -1159,7 +1153,7 @@ document.addEventListener("submit", async e => {
   }
   if (e.target.id === "gJoinForm"){ await joinWithCode($("g-code").value); return; }
   if (e.target.id === "gEditForm"){
-    const gid = e.target.dataset.id, name = $("ge-name").value.trim().slice(0,30), mode = $("ge-full").checked ? "full" : "summary";
+    const gid = e.target.dataset.id, name = $("ge-name").value.trim().slice(0,30), mode = "full";
     const {error} = await S.sb.from("groups").update({name, mode}).eq("id", gid);
     if (error){ toast("Couldn't save."); return; }
     Object.assign(S.groups.find(g => g.id===gid), {name, mode}); S.gmanage = false; await syncChanges(); render(); toast("Saved");
