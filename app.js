@@ -466,7 +466,7 @@ function grade(pct){
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
   return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
-    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
+    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, notifyRecap:r.notify_recap !== false, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
   if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
@@ -985,7 +985,67 @@ function viewMe(){
   const s7 = memberSummary(S.myId,"7"), sm = memberSummary(S.myId,"month"), best = bestStreak(S.myId);
   return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${esc(loc(cfgOf(m)).name)} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
     <div class="tiles num"><div class="tile"><b>${s7.pct==null?"–":Math.round(s7.pct)+"%"}</b><span>Fardh, 7 days</span></div><div class="tile"><b>${best}</b><span>Best streak</span></div><div class="tile"><b>${sm.pts}</b><span>Points this month</span></div></div>
-    ${gradesheet(S.myId)}</div>` + badgeShelf(best) + qazaPanel();
+    ${gradesheet(S.myId)}</div>` + weekCard() + badgeShelf(best) + qazaPanel();
+}
+
+/* ---------- weekly recap ---------- */
+function weekData(){
+  const m = meDoc(), cfg = cfgOf(m), now = new Date(), today = appDay(cfg, now);
+  const days = [];
+  for (let i=6; i>=0; i--){
+    const ds = addDays(today, -i), t = times(cfg, ds), st = dayState(S.myId, ds, now);
+    days.push({ds, label:new Date(ds+"T12:00:00Z").toLocaleDateString("en-GB",{weekday:"short",timeZone:"UTC"}).slice(0,2),
+      dots: P.map(p => codeOf(S.myId,ds,p.k).includes("f") ? "d" : (st.s==="na"||st.s==="ex"||t[p.k] > now || preJoin(m,ds,t[p.k])) ? "n" : "m")});
+  }
+  const s7 = memberSummary(S.myId,"7");
+  return {days, done:s7.done, due:s7.due, streak:streakFor(S.myId, now), from:days[0].ds, to:days[6].ds, name:m.name || ""};
+}
+function weekCard(){
+  const w = weekData();
+  return `<section class="panel week"><div class="sechead"><h3>📊 This week</h3><p class="num">${w.done}/${w.due} fardh</p></div>
+    <div class="wgrid">${w.days.map(d => `<div class="wcol"><div class="wdots">${d.dots.map(x=>`<i class="${x}"></i>`).join("")}</div><small>${d.label}</small></div>`).join("")}</div>
+    <div class="btns"><button class="primary" data-act="recap">📸 Share my week</button></div></section>`;
+}
+async function drawWeekCard(w){
+  try { await document.fonts.ready; } catch {}
+  const bn = LANG === "bn", c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const g = c.getContext("2d"), F = (sz, wt=800) => `${wt} ${sz}px "Baloo Da 2", Nunito, system-ui, sans-serif`;
+  const bg = g.createLinearGradient(0,0,1080,1920); bg.addColorStop(0,"#FFD3E2"); bg.addColorStop(.55,"#E9DDFF"); bg.addColorStop(1,"#C9B6FF");
+  g.fillStyle = bg; g.fillRect(0,0,1080,1920);
+  // sparkles
+  g.fillStyle = "rgba(255,255,255,.55)"; for (const [x,y,r] of [[140,220,10],[930,300,14],[880,1500,9],[170,1650,12],[960,820,7],[90,980,8]]){ g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  g.textAlign = "center"; g.fillStyle = "#4A3A5E";
+  const fmt = ds => new Date(ds+"T12:00:00Z").toLocaleDateString(bn?"bn-BD":"en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
+  g.font = F(64); g.fillText(bn ? "আমার নামাজের সপ্তাহ" : "My namaz week", 540, 300);
+  g.font = F(40,700); g.fillStyle = "#8E78A8"; g.fillText(`${fmt(w.from)} – ${fmt(w.to)}`, 540, 370);
+  // big number card
+  g.fillStyle = "rgba(255,255,255,.85)"; roundRect(g, 140, 450, 800, 470, 60); g.fill();
+  g.fillStyle = "#E0336F"; g.font = F(230); const num = bn ? `${toBn(w.done)}/${toBn(w.due)}` : `${w.done}/${w.due}`; g.fillText(num, 540, 720);
+  g.fillStyle = "#4A3A5E"; g.font = F(52,800); g.fillText(bn ? "ফরজ পড়েছি" : "fardh prayed", 540, 810);
+  if (w.due && w.done === w.due){ g.font = F(42,700); g.fillStyle = "#2EAF86"; g.fillText(bn ? "মাশাআল্লাহ, একটাও বাদ যায়নি ✨" : "MashaAllah, not one missed ✨", 540, 880); }
+  // dots grid
+  const x0 = 175, gap = 122;
+  w.days.forEach((d,i) => { const x = x0 + i*gap;
+    d.dots.forEach((s,j) => { const y = 1030 + j*78; g.beginPath(); g.arc(x, y, 26, 0, 7);
+      if (s==="d"){ g.fillStyle = "#FF7AA2"; g.fill(); } else if (s==="m"){ g.lineWidth = 6; g.strokeStyle = "#FF7AA2"; g.stroke(); } else { g.fillStyle = "rgba(255,255,255,.7)"; g.fill(); } });
+    g.fillStyle = "#8E78A8"; g.font = F(34,800); g.fillText(bn ? new Date(d.ds+"T12:00:00Z").toLocaleDateString("bn-BD",{weekday:"narrow",timeZone:"UTC"}) : d.label, x, 1450); });
+  // streak
+  g.font = F(64); g.fillStyle = "#4A3A5E";
+  g.fillText(w.streak ? (bn ? `🔥 ${toBn(w.streak)} দিনের স্ট্রিক` : `🔥 ${w.streak}-day streak`) : (bn ? "🌱 নতুন স্ট্রিক শুরু হচ্ছে" : "🌱 New streak starting"), 540, 1590);
+  g.font = F(36,700); g.fillStyle = "#8E78A8"; g.fillText(bn ? "প্রতিদিন পাঁচ ওয়াক্ত, বন্ধুদের সাথে" : "five a day, with my friends", 540, 1650);
+  // footer
+  g.font = F(40); g.fillStyle = "#4A3A5E"; g.fillText("🌙 Namaz Board", 540, 1800);
+  return c;
+}
+const toBn = n => String(n).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+async function openRecap(){
+  if (!meDoc()) return;
+  const canvas = await drawWeekCard(weekData());
+  const blob = await new Promise(r => canvas.toBlob(r, "image/png")); S.recapBlob = blob;
+  let el = $("recapDlg"); if (!el){ el = document.createElement("div"); el.id = "recapDlg"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
+  if (S.recapUrl) URL.revokeObjectURL(S.recapUrl); S.recapUrl = URL.createObjectURL(blob);
+  el.innerHTML = `<div class="tcard recap"><img src="${S.recapUrl}" alt="Your namaz week card"><div class="btns"><button class="primary" data-act="recapshare">Share 📸</button><button class="ghost" data-act="recapclose">Close</button></div></div>`;
 }
 function badgeShelf(best){
   return `<section class="panel"><h3>Badges</h3><p>Earned by praying all 5 fardh for days in a row. Your best streak: <b>${best}</b>.</p>
@@ -1150,6 +1210,7 @@ function viewAlerts(){
     <section class="panel"><h3>What to send me</h3>
       <label class="tog"><input type="checkbox" id="n-start" data-act="ntoggle" ${m.notifyStart!==false?"checked":""}><span><b>When each waqt starts</b><br><small>“🌸 It's Asr time · ends 5:14 pm”</small></span></label>
       <label class="tog"><input type="checkbox" id="n-end" data-act="ntoggle" ${m.notifyEnd!==false?"checked":""}><span><b>Streak saver</b><br><small>30 min before a waqt ends, only if you haven't logged its fardh</small></span></label>
+      <label class="tog"><input type="checkbox" id="n-recap" data-act="ntoggle" ${m.notifyRecap!==false?"checked":""}><span><b>Weekly recap</b><br><small>Sunday at 8 pm: your week's fardh and streak, with a card to share</small></span></label>
       <label class="tog"><input type="checkbox" id="n-jumuah" data-act="ntoggle" ${m.notifyJumuah?"checked":""}><span><b>Jumu'ah reminder</b><br><small>On Fridays, 1 hour before Dhuhr, with a nudge to read Surah Al-Kahf</small></span></label>
       <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>
     <section class="panel"><h3>Quiet hours</h3><p>No alerts during these hours, for example while you sleep. Alerts for Fajr may be skipped if they fall inside.</p>
@@ -1330,6 +1391,13 @@ document.addEventListener("click", async e => {
   else if (a==="signout"){
     if (isCodeEmail(S.email) && !b.dataset.sure){ leaveDialog(); return; }
     await S.sb.auth.signOut(); location.reload();
+  }
+  else if (a==="recap"){ b.disabled = true; await openRecap(); b.disabled = false; }
+  else if (a==="recapclose"){ $("recapDlg")?.remove(); }
+  else if (a==="recapshare"){
+    const file = new File([S.recapBlob], "namaz-week.png", {type:"image/png"});
+    if (navigator.canShare?.({files:[file]})){ try { await navigator.share({files:[file]}); } catch {} return; }
+    const a2 = document.createElement("a"); a2.href = S.recapUrl; a2.download = "namaz-week.png"; document.body.appendChild(a2); a2.click(); a2.remove(); toast("Saved to your downloads 📸");
   }
   else if (a==="leaveclose"){ $("leave")?.remove(); }
   else if (a==="nomail"){ S.loginMode = "new"; render(); }
@@ -1549,11 +1617,12 @@ document.addEventListener("change", async e => {
 document.addEventListener("change", async e => {
   if (e.target.dataset.act !== "ntoggle") return;
   const on = $("q-on")?.checked;
-  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked, notify_jumuah:$("n-jumuah").checked,
+  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked, notify_jumuah:$("n-jumuah").checked, notify_recap:$("n-recap")?.checked !== false,
     quiet_start: on ? hm2mins($("q-from").value) : null, quiet_end: on ? hm2mins($("q-to").value) : null};
-  const {error} = await S.sb.from("members").update(patch).eq("id", S.myId);
+  let {error} = await S.sb.from("members").update(patch).eq("id", S.myId);
+  if (error && /notify_recap/.test(error.message||"")){ const {notify_recap:_, ...rest} = patch; ({error} = await S.sb.from("members").update(rest).eq("id", S.myId)); }
   if (error) toast(/column/i.test(error.message||"") ? "This setting needs the latest database update." : "Couldn't save that setting.");
-  else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end, notifyJumuah:patch.notify_jumuah, quietStart:patch.quiet_start, quietEnd:patch.quiet_end}); toast("Saved"); }
+  else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end, notifyJumuah:patch.notify_jumuah, quietStart:patch.quiet_start, quietEnd:patch.quiet_end, notifyRecap:patch.notify_recap}); toast("Saved"); }
 });
 document.addEventListener("submit", async e => {
   e.preventDefault();
@@ -1680,7 +1749,7 @@ async function boot(){
   if (qg){ try { localStorage.setItem("nb-join", qg.toUpperCase()); } catch {} }
   { let c = null; try { c = localStorage.getItem("nb-join"); } catch {}
     if (c) S.sb.rpc("group_preview",{join_code:c}).then(({data}) => { if (data?.[0]){ S.linkGroup = data[0]; if (S.phase!=="app") render(); } }, () => {}); }
-  if (qv || qg){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; if (qv==="board"){ S.view = "board"; if (qs.get("gid")) S.gid = qs.get("gid"); } }
+  if (qv || qg){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; if (qv==="board"){ S.view = "board"; if (qs.get("gid")) S.gid = qs.get("gid"); } if (qv==="recap") S.openRecap = true; }
   await afterAuth();
   if (meDoc()){
     let saved = null; try { saved = localStorage.getItem("nb-lang"); } catch {}
@@ -1688,6 +1757,7 @@ async function boot(){
     if (!saved && theirs === "bn"){ try { localStorage.setItem("nb-lang","bn"); } catch {} location.reload(); return; }
     if (saved && theirs && theirs !== saved) S.sb.from("members").update({lang:saved}).eq("id", S.myId).then(()=>{}, ()=>{});
   }
+  if (S.openRecap && S.phase==="app"){ S.openRecap = false; S.view = "me"; render(); openRecap(); }
   if (S.pendingView && S.admin && S.phase==="app"){ S.view = S.pendingView; S.forceForm = true; render(); }
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState==="visible" && S.phase==="app"){ try { await syncChanges(); render(); } catch {} }

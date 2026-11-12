@@ -250,7 +250,7 @@ const FARDH = [
 const WINDOW_MS = 10 * 60e3;      // cron can run late; send if we're within 10 min of the moment
 const END_LEAD_MS = 30 * 60e3;    // streak-saver goes 30 min before the waqt ends
 
-type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null; lang?: string | null };
+type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null; lang?: string | null; notify_recap?: boolean | null; joined?: string | null; created_at?: string };
 type Times = Record<string, Date>;
 
 const ymd = (d: Date, tz: string) =>
@@ -286,6 +286,20 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 }
 
 /** Which notifications are due right now for this member (pure; tested). */
+/* Weekly recap: Sunday 8 pm local time. */
+export function recapDue(m: Member, now: Date) {
+  if (m.notify_recap === false) return null;
+  const tz = loc(cfgOf(m)).tz, local = ymd(now, tz);
+  if (new Date(local + "T12:00:00Z").getUTCDay() !== 0) return null;
+  const hm = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+  return hm >= "20:00" && hm < "20:10" ? local : null;
+}
+export function recapMessage(done: number, due: number, streak: number, bn: boolean) {
+  const all = due > 0 && done === due;
+  if (bn) return { title: "📊 তোমার নামাজের সপ্তাহ", body: (all ? `মাশাআল্লাহ, এই সপ্তাহে সব ফরজ ✨ ${bnNum(String(done))}/${bnNum(String(due))}` : `এই সপ্তাহে ${bnNum(String(done))}/${bnNum(String(due))} ফরজ`) + (streak ? ` · 🔥 ${bnNum(String(streak))} দিনের স্ট্রিক` : "") + "। দেখতে আর শেয়ার করতে চাপো 📸" };
+  return { title: "📊 Your namaz week", body: (all ? `MashaAllah, every fardh this week ✨ ${done}/${due}` : `This week: ${done}/${due} fardh`) + (streak ? ` · 🔥 ${streak}-day streak` : "") + ". Tap to see it and share 📸" };
+}
+
 export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
   const cfg = cfgOf(m), tz = loc(cfg).tz;
   const out: { day: string; waqt: string; kind: "start" | "end" | "jumuah"; title: string; body: string }[] = [];
@@ -578,6 +592,23 @@ Deno.serve(async (req) => {
       if (error || !claimed?.length) continue;
       sent += await send(m.id, ev.title, ev.body, `${ev.waqt}-${ev.kind}`);
     }
+  }
+  // Sunday-evening weekly recap.
+  for (const m of (members ?? []) as Member[]) {
+    const day = recapDue(m, now); if (!day || inQuiet(m, now)) continue;
+    const { data: claimed, error } = await db.from("notify_sent")
+      .upsert({ user_id: m.id, day, waqt: "week", kind: "recap" }, { onConflict: "user_id,day,waqt,kind", ignoreDuplicates: true }).select();
+    if (error || !claimed?.length) continue;
+    const since10 = addDays(day, -10);
+    const [{ data: lg }, { data: ex }, { data: st }] = await Promise.all([
+      db.from("logs").select("day,waqt,code").eq("user_id", m.id).gte("day", since10),
+      db.from("excused").select("day").eq("user_id", m.id).gte("day", since10),
+      db.from("member_stats").select("streak").eq("user_id", m.id).maybeSingle()]);
+    const cm = new Map((lg ?? []).map((l) => [`${l.day}|${l.waqt}`, l.code ?? ""])), exs = new Set((ex ?? []).map((r) => r.day));
+    const s7 = computeStats(m as unknown as StatMember, (d, w) => cm.get(`${d}|${w}`) ?? "", (d) => exs.has(d), now);
+    if (!s7.wk_due) continue;
+    const { title, body } = recapMessage(s7.wk_done, s7.wk_due, st?.streak ?? s7.streak, m.lang === "bn");
+    sent += await send(m.id, title, body, "recap-" + day, "?view=recap");
   }
   // Keep the sent log small.
   await db.from("notify_sent").delete().lt("day", addDays(now.toISOString().slice(0, 10), -7));
