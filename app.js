@@ -1101,7 +1101,8 @@ function badgeShelf(best){
     <div class="shelf">${MILESTONES.map(x => `<div class="sbadge ${best>=x.n?"on":""}"><span>${x.e}</span><b>${x.t}</b><small>${best>=x.n ? "Earned" : `${x.n - best} to go`}</small></div>`).join("")}</div></section>`;
 }
 const QAZA_W = [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"],["witr","Witr"]];
-/* Fardh missed since joining (locked, not prayed, not made up as qaza, not on an excused day). */
+/* Fardh missed since joining: its waqt ended without the fardh logged (not made up as qaza, not on an excused day).
+   If you later tap Fardh because you did pray on time, it drops off this list by itself. */
 function autoMissed(){
   const m = meDoc(), out = {}; if (!m?.joined) return out;
   const cfg = cfgOf(m), now = new Date(), today = appDay(cfg, now);
@@ -1110,7 +1111,7 @@ function autoMissed(){
     const t = times(cfg, d);
     for (const p of P){
       const c = codeOf(S.myId,d,p.k);
-      if (c.includes("f") || c.includes("q") || preJoin(m,d,t[p.k]) || now < new Date(+t[p.k]+DAY)) continue;
+      if (c.includes("f") || c.includes("q") || preJoin(m,d,t[p.k]) || now < waqtEnd(cfg,d,p.k)) continue;
       out[p.k] = (out[p.k]||0) + 1;
     }
   }
@@ -1120,7 +1121,7 @@ function qazaPanel(){
   if (!S.qazaReady) return "";
   const auto = autoMissed();
   let owedAll = 0, doneAll = 0;
-  const rows = P.map(p => { const k = p.k, a = auto[k] || 0, done = Math.min(a, S.qaza[k]?.done || 0), left = a - done;
+  const rows = P.filter(p => auto[p.k]).map(p => { const k = p.k, a = auto[k] || 0, done = Math.min(a, S.qaza[k]?.done || 0), left = a - done;
     owedAll += a; doneAll += done;
     return `<div class="qrow"><b>${p.en}</b>
       <span class="qleft num">${left ? `${left} left` : a ? "All made up ✨" : "–"}${a ? `<small>${a} missed since you joined</small>` : ""}</span>
