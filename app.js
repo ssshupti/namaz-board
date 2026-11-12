@@ -1196,6 +1196,17 @@ function codeCard(code, fresh){
     <div class="codebox" data-notr>${esc(code)}</div>
     <div class="btns"><button class="primary" data-act="copycode" data-code="${esc(code)}">Copy</button>${fresh ? `<button class="ghost" data-act="codesaved">I've saved it ✓</button>` : ""}</div></section>`;
 }
+/* Signing out of an account without email: show the code first, so nobody gets locked out by accident. */
+function leaveDialog(){
+  const code = savedCode();
+  let el = $("leave"); if (!el){ el = document.createElement("div"); el.id = "leave"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
+  el.innerHTML = `<div class="tcard"><h3>Leave this account?</h3>
+    <p>This account has no email, so the <b>only</b> way back in is its Namaz Board code${code ? ":" : "."}</p>
+    ${code ? `<div class="codebox" data-notr>${esc(code)}</div><div class="btns"><button class="ghost" data-act="copycode" data-code="${esc(code)}">Copy code</button></div>`
+      : `<p class="note">This phone doesn't have the code saved. Make a new one in Settings first if you want to come back.</p>`}
+    <div class="btns"><button class="primary" data-act="leaveclose">Stay here</button><button class="ghost" data-act="signout" data-sure="1">Leave account</button></div></div>`;
+  el.querySelector(".primary")?.focus();
+}
 function viewNoMail(){
   if (S.loginMode === "restore") return `<form class="panel hero-login" id="restoreForm"><h3>Sign in with your code 🔑</h3>
     <p>Type the Namaz Board code you were given when you signed up. It starts with NB.</p>
@@ -1317,9 +1328,10 @@ document.addEventListener("click", async e => {
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
   }
   else if (a==="signout"){
-    if (isCodeEmail(S.email) && !S.confirmOut){ S.confirmOut = true; b.textContent = "Saved your Namaz Board code? Tap again"; setTimeout(() => { S.confirmOut = false; }, 5000); return; }
+    if (isCodeEmail(S.email) && !b.dataset.sure){ leaveDialog(); return; }
     await S.sb.auth.signOut(); location.reload();
   }
+  else if (a==="leaveclose"){ $("leave")?.remove(); }
   else if (a==="nomail"){ S.loginMode = "new"; render(); }
   else if (a==="restore"){ S.loginMode = "restore"; render(); }
   else if (a==="loginback"){ S.loginMode = null; render(); }
