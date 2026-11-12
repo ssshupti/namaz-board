@@ -441,3 +441,7 @@ html[lang="bn"] .bn{display:none}
 .stk b{font-family:var(--display);font-size:17px;line-height:1.2}
 @keyframes wiggle{25%{transform:rotate(-14deg) scale(1.15)}75%{transform:rotate(12deg) scale(1.15)}}
 @media (prefers-reduced-motion: reduce){.sheet,.stk .se{animation:none}#sticker{transition:none}}
+.allbtn{border:0;background:linear-gradient(135deg,#FF8FB3,#B99CFF);color:#fff;font:inherit;font-weight:800;font-size:13.5px;padding:7px 14px;border-radius:999px;cursor:pointer;box-shadow:0 3px 0 rgba(120,60,140,.25)}
+.allbtn:active{transform:translateY(2px);box-shadow:none}
+.gav{background:linear-gradient(135deg,#FFE1EC,#E6E0FF)!important;font-size:24px!important}
+.nrow.g .nbubble{background:#E6E0FF}

@@ -78,7 +78,8 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud in full-details groups":"সম্পূর্ণ বিস্তারিত গ্রুপে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","Give them a nudge 👉":"একটু খোঁচা দাও 👉","Hype them up ✨":"হাইপ দাও ✨","See their month →":"তার পুরো মাস দেখুন →",
+  "Language":"ভাষা","📢 Message everyone":"📢 সবাইকে মেসেজ","Message the whole group 📢":"পুরো গ্রুপকে মেসেজ দাও 📢","Sent to everyone 📢":"সবাইকে পাঠানো হয়েছে 📢",
+  "One group message per namaz. Try again at the next waqt 😌":"প্রতি নামাজে একটাই গ্রুপ মেসেজ। পরের ওয়াক্তে আবার পাঠাও 😌","→ 📢 everyone ·":"→ 📢 সবাই ·","Give them a nudge 👉":"একটু খোঁচা দাও 👉","Hype them up ✨":"হাইপ দাও ✨","See their month →":"তার পুরো মাস দেখুন →",
   "💬 Nudges":"💬 খোঁচা","Last 2 days":"গত ২ দিন","Tap a friend's ring above to nudge them or hype them up.":"বন্ধুর রিংয়ে চাপ দিয়ে খোঁচা বা হাইপ দাও।",
   "Already sent one for this namaz 😌":"এই নামাজের জন্য একটা পাঠানো হয়ে গেছে 😌","Couldn't send that. Try again.":"পাঠানো যায়নি। আবার চেষ্টা করুন।","Replied 💬":"উত্তর দেওয়া হয়েছে 💬",
   "Sent ✓":"পাঠানো হয়েছে ✓","One per namaz, so nobody gets spammed. Try again at the next waqt 😌":"প্রতি নামাজে একটাই, যাতে কেউ বিরক্ত না হয়। পরের ওয়াক্তে আবার পাঠাও 😌","Everyone in the group sees each other's 🔥 streak and today's fardh rings.":"গ্রুপের সবাই একে অপরের 🔥 স্ট্রিক আর আজকের ফরজের রিং দেখতে পায়।","🌍 Everyone today":"🌍 আজ সবাই","Looking up the group…":"গ্রুপ খোঁজা হচ্ছে…","No group has that code. Check it with your friend.":"এই কোডে কোনো গ্রুপ নেই। বন্ধুর কাছ থেকে আবার দেখে নিন।",
@@ -128,6 +129,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Everyone · (\d+) friends?$/, (_,n) => `সবাই · ${n} জন বন্ধু`],
+  [/^→ 📢 everyone · (\d+) (min|h|d) ago$/, (_,n,u) => `→ 📢 সবাই · ${n} ${({min:"মিনিট",h:"ঘণ্টা",d:"দিন"})[u]} আগে`],
   [/^Sent to (.+) 🚀$/, (_,n) => `${n}-কে পাঠানো হয়েছে 🚀`],
   [/^(Fajr|Dhuhr|Asr|Maghrib|Isha): not logged yet$/, (_,n) => `${w(n)}: এখনো লগ করেনি`],
   [/^prayed (Fajr|Dhuhr|Asr|Maghrib|Isha) ✓$/, (_,n) => `${w(n)} পড়েছে ✓`],

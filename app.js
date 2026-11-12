@@ -124,7 +124,12 @@ const NUDGES = {
   r1:["🤲 JazakAllah khair bestie","🤲 জাযাকাল্লাহ খাইর দোস্ত"],
   r2:["🏃 omw to the jaynamaz","🏃 জায়নামাজের দিকে যাচ্ছি"],
   r3:["✅ done & dusted","✅ পড়া শেষ"],
-  r4:["😭 ok ok going","😭 আচ্ছা আচ্ছা যাচ্ছি"]};
+  r4:["😭 ok ok going","😭 আচ্ছা আচ্ছা যাচ্ছি"],
+  g1:["📢 {w} roll call, who's in?","📢 {w} হাজিরা, কে কে আছো?"],
+  g2:["🔥 group streak on the line, don't fumble it","🔥 গ্রুপ স্ট্রিক ঝুঁকিতে, কেউ ফেল মারবা না"],
+  g3:["🫂 let's all pray {w} rn","🫂 চলো সবাই এখনই {w} পড়ি"],
+  g4:["🤲 remember each other in dua today","🤲 আজ সবাই সবার জন্য দোয়া করো"],
+  g5:["🎉 we all prayed {w}, we're so back","🎉 সবাই {w} পড়েছি, আমরা ফিরে এসেছি"]};
 const nudgeText = (kind, waqt) => { const bn = typeof LANG!=="undefined" && LANG==="bn", p = P.find(x => x.k===waqt);
   return (NUDGES[kind]?.[bn?1:0] || "👋").replaceAll("{w}", p ? (bn ? p.bn : p.en) : waqt); };
 const avatar = (id,name,crown) => `<span class="av" style="background:linear-gradient(140deg,hsl(${hue(id)} 85% 82%),hsl(${(hue(id)+50)%360} 80% 76%))">${crown?'<span class="crown" aria-hidden="true">👑</span>':""}${esc((name||"?").trim().charAt(0).toUpperCase())}</span>`;
@@ -388,7 +393,7 @@ function subscribeLive(){
     });
   channel.on("postgres_changes",{event:"INSERT",schema:"public",table:"nudges"}, ({new:n}) => {
       if (!S.nudges.some(x => x.id===n.id)) S.nudges.unshift(n);
-      if (n.to_id===S.myId) sticker(n);
+      if (n.to_id===S.myId || (!n.to_id && n.from_id!==S.myId)) sticker(n);
       scheduleRender();
     });
   channel.on("postgres_changes",{event:"*",schema:"public",table:"member_stats"}, ({eventType,new:n,old:o}) => {
@@ -561,7 +566,17 @@ function nudgeTarget(id){
   return {day, waqt:p.k, p, prayed: codeOf(id,day,p.k).includes("f")};
 }
 const myNudge = (to, day, waqt) => S.nudges.find(n => n.from_id===S.myId && n.to_id===to && n.day===day && n.waqt===waqt && !n.reply_to);
+function groupSheet(gid){
+  const g = S.groups.find(x => x.id===gid); if (!g) return "";
+  const tg = nudgeTarget(S.myId), sent = S.nudges.find(n => n.from_id===S.myId && !n.to_id && n.group_id===gid && n.day===tg.day && n.waqt===tg.waqt);
+  return `<div class="sheet-bg" data-act="nudgeclose"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Message everyone in ${esc(g.name)}">
+    <div class="shead"><span class="av gav">📢</span><div><b data-notr>${esc(g.name)}</b><small>Everyone · ${groupIds(gid).length - 1} friends</small></div><button class="x" data-act="nudgeclose" aria-label="Close">✕</button></div>
+    <p class="slabel">Message the whole group 📢</p>
+    ${sent ? `<div class="nsent">Sent ✓ <span>${esc(nudgeText(sent.kind, sent.waqt))}</span></div><p class="note">One group message per namaz. Try again at the next waqt 😌</p>`
+      : `<div class="nchips">${["g1","g2","g3","g4","g5"].map((k,i) => `<button class="nchip c${i}" data-act="nudgesend" data-k="${k}">${esc(nudgeText(k, tg.waqt))}</button>`).join("")}</div>`}</div>`;
+}
 function nudgeSheet(){
+  if (S.nudgeTo.all) return groupSheet(S.nudgeTo.gid);
   const {id, gid} = S.nudgeTo, m = S.members[id]; if (!m) return "";
   const tg = nudgeTarget(id), sent = myNudge(id, tg.day, tg.waqt);
   const keys = tg.prayed ? ["h1","h2","h3","h4","h5"] : ["n1","n2","n3","n4","n5"];
@@ -576,13 +591,15 @@ function nudgeSheet(){
 function nudgeFeed(gid){
   if (S.noNudges) return "";
   const list = S.nudges.filter(n => n.group_id===gid).slice(0,12);
-  if (!list.length) return `<section class="feed"><div class="sechead"><h3>💬 Nudges</h3></div><p class="note">Tap a friend's ring above to nudge them or hype them up.</p></section>`;
+  const allBtn = `<button class="allbtn" data-act="nudgeall" data-gid="${esc(gid)}">📢 Message everyone</button>`;
+  if (!list.length) return `<section class="feed"><div class="sechead"><h3>💬 Nudges</h3>${allBtn}</div><p class="note">Tap a friend's ring above to nudge them or hype them up.</p></section>`;
   const replied = new Set(S.nudges.filter(n => n.reply_to && n.from_id===S.myId).map(n => n.reply_to));
   const nm = id => id===S.myId ? "You" : esc(S.members[id]?.name || "Someone");
-  return `<section class="feed"><div class="sechead"><h3>💬 Nudges</h3><p>Last 2 days</p></div>${list.map(n => {
-    const canReply = n.to_id===S.myId && !n.reply_to && !replied.has(n.id);
-    return `<div class="nrow ${n.to_id===S.myId?"tome":""} ${n.kind[0]}">
-      <div class="nmeta"><span data-notr>${nm(n.from_id)}</span> → <span data-notr>${nm(n.to_id)}</span> · ${ago(n.created_at)}</div>
+  return `<section class="feed"><div class="sechead"><h3>💬 Nudges</h3>${allBtn}</div>${list.map(n => {
+    const forMe = n.to_id===S.myId || (!n.to_id && n.from_id!==S.myId);
+    const canReply = forMe && !n.reply_to && !replied.has(n.id);
+    return `<div class="nrow ${forMe?"tome":""} ${n.kind[0]}">
+      <div class="nmeta"><span data-notr>${nm(n.from_id)}</span> → ${n.to_id ? `<span data-notr>${nm(n.to_id)}</span>` : "📢 everyone"} · ${ago(n.created_at)}</div>
       <div class="nbubble">${esc(nudgeText(n.kind, n.waqt))}</div>
       ${canReply ? `<div class="rchips">${["r1","r2","r3","r4"].map(k => `<button class="rchip" data-act="nudgereply" data-id="${n.id}" data-k="${k}">${esc(nudgeText(k, n.waqt))}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</section>`;
 }
@@ -1038,9 +1055,10 @@ function render(){
   const shHtml = S.nudgeTo ? nudgeSheet() : ""; if (sh.dataset.h !== shHtml){ sh.innerHTML = shHtml; sh.dataset.h = shHtml; }
   // Unread nudges: dot on the Board tab.
   let seen = ""; try { seen = localStorage.getItem("nb-nudge-seen") || ""; } catch {}
-  const unread = S.nudges.some(n => n.to_id===S.myId && n.created_at > seen);
+  const toMe = n => n.to_id===S.myId || (!n.to_id && n.from_id!==S.myId);
+  const unread = S.nudges.some(n => toMe(n) && n.created_at > seen);
   document.querySelector('.nav [data-tab="board"]')?.classList.toggle("dot", unread);
-  if (unread && S.view==="board" && S.gid!=="all"){ const last = S.nudges.filter(n => n.to_id===S.myId)[0]; try { localStorage.setItem("nb-nudge-seen", last.created_at); } catch {} }
+  if (unread && S.view==="board" && S.gid!=="all"){ const last = S.nudges.filter(toMe).sort((a,b) => a.created_at < b.created_at ? 1 : -1)[0]; try { localStorage.setItem("nb-nudge-seen", last.created_at); } catch {} }
   S.pop = "";
 }
 
@@ -1115,6 +1133,12 @@ document.addEventListener("click", async e => {
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
   else if (a==="nudge"){ S.nudgeTo = {id:b.dataset.id, gid:nudgeGroup(b.dataset.id, b.dataset.gid)}; render(); }
   else if (a==="nudgeclose"){ S.nudgeTo = null; render(); }
+  else if (a==="nudgeall"){ S.nudgeTo = {all:true, gid:b.dataset.gid}; render(); }
+  else if (a==="nudgesend" && S.nudgeTo?.all){
+    const {gid} = S.nudgeTo, tg = nudgeTarget(S.myId); b.disabled = true;
+    if (await sendNudge({group_id:gid, to_id:null, kind:b.dataset.k, waqt:tg.waqt, day:tg.day})){ toast("Sent to everyone 📢"); celebrate(); S.nudgeTo = null; }
+    render();
+  }
   else if (a==="nudgesend"){
     const {id, gid} = S.nudgeTo, tg = nudgeTarget(id); b.disabled = true;
     if (await sendNudge({group_id:gid, to_id:id, kind:b.dataset.k, waqt:tg.waqt, day:tg.day})){

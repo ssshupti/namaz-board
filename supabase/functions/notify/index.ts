@@ -256,11 +256,16 @@ export const NUDGE_TEXT: Record<string, [string, string]> = {
   r2: ["🏃 omw to the jaynamaz", "🏃 জায়নামাজের দিকে যাচ্ছি"],
   r3: ["✅ done & dusted", "✅ পড়া শেষ"],
   r4: ["😭 ok ok going", "😭 আচ্ছা আচ্ছা যাচ্ছি"],
+  g1: ["📢 {w} roll call, who's in?", "📢 {w} হাজিরা, কে কে আছো?"],
+  g2: ["🔥 group streak on the line, don't fumble it", "🔥 গ্রুপ স্ট্রিক ঝুঁকিতে, কেউ ফেল মারবা না"],
+  g3: ["🫂 let's all pray {w} rn", "🫂 চলো সবাই এখনই {w} পড়ি"],
+  g4: ["🤲 remember each other in dua today", "🤲 আজ সবাই সবার জন্য দোয়া করো"],
+  g5: ["🎉 we all prayed {w}, we're so back", "🎉 সবাই {w} পড়েছি, আমরা ফিরে এসেছি"],
 };
 const WAQT_NAME: Record<string, [string, string]> = { fajr: ["Fajr", "ফজর"], dhuhr: ["Dhuhr", "যোহর"], asr: ["Asr", "আসর"], maghrib: ["Maghrib", "মাগরিব"], isha: ["Isha", "এশা"] };
-export function nudgeMessage(kind: string, waqt: string, from: string, bn: boolean) {
+export function nudgeMessage(kind: string, waqt: string, from: string, bn: boolean, group = "") {
   const i = bn ? 1 : 0, body = (NUDGE_TEXT[kind]?.[i] ?? "👋").replaceAll("{w}", WAQT_NAME[waqt]?.[i] ?? waqt);
-  const title = kind[0] === "r" ? (bn ? `💬 ${from} উত্তর দিল` : `💬 ${from} replied`)
+  const title = kind[0] === "g" ? `📢 ${from} → ${group}` : kind[0] === "r" ? (bn ? `💬 ${from} উত্তর দিল` : `💬 ${from} replied`)
     : kind[0] === "h" ? (bn ? `✨ ${from} তোমাকে হাইপ দিল` : `✨ ${from} is hyping u`)
     : (bn ? `👉 ${from} তোমাকে খোঁচা দিল` : `👉 ${from} nudged u`);
   return { title, body };
@@ -358,14 +363,21 @@ Deno.serve(async (req) => {
     .eq("pushed", false).gte("created_at", new Date(+now - 30 * 60e3).toISOString()).limit(200);
   if (nudges?.length) {
     await db.from("nudges").update({ pushed: true }).in("id", nudges.map((n) => n.id));
-    const people = [...new Set(nudges.flatMap((n) => [n.from_id, n.to_id]))];
+    // Group messages go to every member except the sender.
+    const gids = [...new Set(nudges.filter((n) => !n.to_id).map((n) => n.group_id))];
+    const { data: gms } = gids.length ? await db.from("group_members").select("group_id,user_id").in("group_id", gids) : { data: [] };
+    const { data: gs } = gids.length ? await db.from("groups").select("id,name").in("id", gids) : { data: [] };
+    const gName = new Map((gs ?? []).map((g) => [g.id, g.name]));
+    const jobs = nudges.flatMap((n) => n.to_id ? [{ ...n, to: n.to_id as string }]
+      : (gms ?? []).filter((m) => m.group_id === n.group_id && m.user_id !== n.from_id).map((m) => ({ ...n, to: m.user_id as string })));
+    const people = [...new Set(jobs.flatMap((n) => [n.from_id, n.to]))];
     const { data: ms } = await db.from("members").select("*").in("id", people);
     const byId = new Map((ms ?? []).map((m) => [m.id, m]));
-    for (const n of nudges) {
-      const to = byId.get(n.to_id), from = byId.get(n.from_id);
+    for (const n of jobs) {
+      const to = byId.get(n.to), from = byId.get(n.from_id);
       if (!to || !from || inQuiet(to as Member, now)) continue;
-      const { title, body } = nudgeMessage(n.kind, n.waqt, from.name || "A friend", to.lang === "bn");
-      nudgeSent += await send(n.to_id, title, body, `nudge-${n.id}`, `?view=board&gid=${n.group_id}`);
+      const { title, body } = nudgeMessage(n.kind, n.waqt, from.name || "A friend", to.lang === "bn", gName.get(n.group_id) ?? "");
+      nudgeSent += await send(n.to, title, body, `nudge-${n.id}`, `?view=board&gid=${n.group_id}`);
     }
   }
   await db.from("nudges").delete().lt("created_at", new Date(+now - 7 * 86400e3).toISOString());
