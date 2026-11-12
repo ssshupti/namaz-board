@@ -78,7 +78,7 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","Pick my city":"শহর বেছে নিন","📢 Message everyone":"📢 সবাইকে মেসেজ","Message the whole group 📢":"পুরো গ্রুপকে মেসেজ দাও 📢","Sent to everyone 📢":"সবাইকে পাঠানো হয়েছে 📢",
+  "Language":"ভাষা","Picking a city also picks the usual method there. You can still change it.":"শহর বাছলে সেখানকার প্রচলিত পদ্ধতিও বাছা হয়। চাইলে বদলাতে পারেন।","City not listed?":"শহর তালিকায় নেই?","Tap":"চাপুন","above for exact times wherever you are.":"(উপরে), যেখানেই থাকুন সঠিক সময় পাবেন।","Pick my city":"শহর বেছে নিন","📢 Message everyone":"📢 সবাইকে মেসেজ","Message the whole group 📢":"পুরো গ্রুপকে মেসেজ দাও 📢","Sent to everyone 📢":"সবাইকে পাঠানো হয়েছে 📢",
   "One group message per namaz. Try again at the next waqt 😌":"প্রতি নামাজে একটাই গ্রুপ মেসেজ। পরের ওয়াক্তে আবার পাঠাও 😌","→ 📢 everyone ·":"→ 📢 সবাই ·","Give them a nudge 👉":"একটু খোঁচা দাও 👉","Hype them up ✨":"হাইপ দাও ✨","See their month →":"তার পুরো মাস দেখুন →",
   "💬 Nudges":"💬 খোঁচা","Last 2 days":"গত ২ দিন","Tap a friend's ring above to nudge them or hype them up.":"বন্ধুর রিংয়ে চাপ দিয়ে খোঁচা বা হাইপ দাও।",
   "Already sent one for this namaz 😌":"এই নামাজের জন্য একটা পাঠানো হয়ে গেছে 😌","Couldn't send that. Try again.":"পাঠানো যায়নি। আবার চেষ্টা করুন।","Replied 💬":"উত্তর দেওয়া হয়েছে 💬",

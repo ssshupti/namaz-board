@@ -890,7 +890,7 @@ function viewSettings(){
     </div>
     <label class="f">Fajr & Isha method<select id="f-method">${Object.entries(METHODS).map(([k,l])=>`<option value="${k}" ${k===cfg.method?"selected":""}>${l}</option>`).join("")}</select></label>
     <div class="locrow"><button type="button" class="ghost" data-act="geo">📍 Use my location</button><span class="note" id="geoNote">${cfg.city==="custom" ? `Using ${esc(cfg.place)} (rounded to about 10 km).` : "Optional. Exact times for where you are. Your position is rounded to about 10 km."}</span></div>
-    <p class="note">Picking a city also picks the usual method there. You can still change it.</p>
+    <p class="note">Picking a city also picks the usual method there. You can still change it. <b>City not listed?</b> Tap <b>📍 Use my location</b> above for exact times wherever you are.</p>
     <fieldset class="vis"><legend>Everyone board</legend>
       <label><input type="radio" name="f-vis" id="f-public" value="public" ${m.isPublic!==false?"checked":""}><span><b>🌍 Public</b><small>I'm on the Everyone board: all Namaz Board users see my streak, grade and today's fardh. My groups see me too.</small></span></label>
       <label><input type="radio" name="f-vis" id="f-private" value="private" ${m.isPublic===false?"checked":""}><span><b>🔒 Private</b><small>I'm hidden from the Everyone board. My groups still see my record.</small></span></label>
