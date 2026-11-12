@@ -681,7 +681,7 @@ function viewToday(){
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
-  let html = tzBanner() + requestsNudge() + streakCard() + alertsNudge() + friendsStrip();
+  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
@@ -967,6 +967,15 @@ async function testPush(){
     toast("Test failed · " + why);
   } catch(e){ toast("Test failed · " + (e?.message || "check your connection")); }
 }
+/* Android/desktop Chrome: offer a real install (no Chrome badge on the icon). */
+let installEvt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; scheduleRender(); });
+addEventListener("appinstalled", () => { installEvt = null; toast("Installed 🎉 Open Namaz Board from your home screen."); scheduleRender(); });
+function installNudge(){
+  if (!installEvt || standalone) return "";
+  try { if (localStorage.getItem("nb-install-hide")==="1") return ""; } catch {}
+  return `<div class="notice"><span>📲 <b>Install Namaz Board</b> as an app on this phone.</span><div class="btns"><button class="primary" data-act="install">Install</button><button class="ghost" data-act="hideinstall">Later</button></div></div>`;
+}
 function alertsNudge(){
   if (!meDoc() || S.pushOn || !pushSupported && !isIOS) return "";
   try { if (localStorage.getItem("nb-nudge-hide")==="1") return ""; } catch {}
@@ -1137,6 +1146,8 @@ document.addEventListener("click", async e => {
   else if (a==="pushon") enablePush();
   else if (a==="pushoff") disablePush();
   else if (a==="pushtest") testPush();
+  else if (a==="install"){ if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch {} installEvt = null; render(); }
+  else if (a==="hideinstall"){ try { localStorage.setItem("nb-install-hide","1"); } catch {} render(); }
   else if (a==="tzok"){ try { localStorage.setItem("nb-tzok", b.dataset.key); } catch {} render(); }
   else if (a==="tzswitch"){
     const k = b.dataset.city, c = CITIES[k]; if (!c) return; b.disabled = true;

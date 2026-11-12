@@ -2,6 +2,7 @@
   "name": "Namaz Board",
   "short_name": "Namaz",
   "description": "Log your daily namaz, keep your streak, cheer on your friends.",
+  "id": "./",
   "start_url": "./?view=today",
   "scope": "./",
   "display": "standalone",
