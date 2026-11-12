@@ -467,3 +467,20 @@ html[lang="bn"] .bn{display:none}
 .wcol small{color:var(--muted);font-weight:800;font-size:12px}
 .tcard.recap{padding:14px}
 .tcard.recap img{width:100%;max-height:68vh;object-fit:contain;border-radius:20px;display:block;margin-bottom:12px}
+.wdots i.q,.dots i.q{background:var(--lav);border-color:var(--lav)}
+.wdots i.u{background:none;border:2px dashed var(--line);box-sizing:border-box}
+/* qaza */
+.tag.qz{background:color-mix(in srgb,var(--lav) 30%,transparent);color:var(--ink)}
+.qzrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.qzrow small{color:var(--muted);font-weight:700;font-size:12.5px}
+.chip.qz.on{background:var(--lav);border-color:var(--lav);color:#2b1f45}
+.qtag{display:inline-block;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;background:color-mix(in srgb,var(--lav) 35%,transparent);color:var(--ink)}
+.qleft small{display:block;font-size:11.5px;color:var(--muted);font-weight:700}
+.qzrow .chip{white-space:nowrap;flex:0 0 auto;width:auto}
+.qown{white-space:nowrap}
+.qown input{width:64px}
+.qleft small{white-space:nowrap}
+.qrow{grid-template-columns:auto 1fr}
+.qrow .qown{justify-self:end}
+.qrow .qleft{grid-column:1/-1;text-align:left;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.qleft small{display:inline}

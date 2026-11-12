@@ -239,7 +239,7 @@ const P = [
   {k:"isha",en:"Isha",bn:"এশা",f:4,chips:[["b","Sunnah","4"],["s","Sunnah","2"],["w","Witr","3"],["n","Nafl","2"]]}
 ];
 const X = {k:"x",en:"Tahajjud & extra",bn:"তাহাজ্জুদ",chips:[["t","Tahajjud"],["i","Ishraq"],["d","Duha"],["a","Awwabin"]]};
-const PTS = {f:10,s:3,b:2,w:3,n:2,t:5,i:2,d:2,a:2};
+const PTS = {f:10,q:5,s:3,b:2,w:3,n:2,t:5,i:2,d:2,a:2};
 const H = 3600e3, DAY = 24*H, HISTORY_DAYS = 130;
 
 const S = {nudges:[],nudgeTo:null,sb:null,session:null,myId:null,email:"",invited:false,admin:false,invites:[],requests:[],myRequest:null,lastSync:null,
@@ -433,7 +433,7 @@ function summaryFor(id, period){
   const st = S.stats[id] || {}, full = fullIds().has(id), see = full || isPub(id);
   const due = period==="7" ? st.wk_due||0 : period==="all" ? st.f_due||0 : st.mo_due||0, done = period==="7" ? st.wk_done||0 : period==="all" ? st.f_done||0 : st.mo_done||0;
   let dots = null;
-  if (see){ const cfg = cfgOf(S.members[id]), today = appDay(cfg), now = new Date(); dots = P.map(p => codeOf(id,today,p.k).includes("f") ? "d" : (now >= waqtEnd(cfg,today,p.k) ? "m" : "")); }
+  if (see){ const cfg = cfgOf(S.members[id]), today = appDay(cfg), now = new Date(); dots = P.map(p => { const c = codeOf(id,today,p.k); return c.includes("f") ? "d" : c.includes("q") ? "q" : (now >= waqtEnd(cfg,today,p.k) ? "m" : ""); }); }
   return {due, done, pts: st.mo_pts||0, ptsMonthOnly: period!=="month", streak: st.streak||0, pct: due ? done/due*100 : null, dots, full};
 }
 function myStats(now=new Date()){
@@ -713,9 +713,10 @@ function streakCard(){
 }
 function tallyRow(){
   const t = memberSummary(S.myId,"all"), pct = t.due ? Math.round(t.done/t.due*100) : 0;
+  let qz = 0; { const m = meDoc(); if (m?.joined) for (let d = m.joined, i=0; i < 4000 && d <= appDay(cfgOf(m)); d = addDays(d,1), i++) for (const p of P){ const c = codeOf(S.myId,d,p.k); if (!c.includes("f") && c.includes("q")) qz++; } }
   return `<div class="tally"><div class="tl"><span class="tlabel">Fardh since you joined</span><span class="tnum num"><b>${t.done}</b>/${t.due}</span></div>
     <div class="tbar"><i style="width:${t.due?t.done/t.due*100:0}%"></i></div>
-    <p class="note" style="margin:0">${t.due ? (t.done===t.due ? `Every fardh so far ✨ ${pct}%` : `${pct}% · ${t.due-t.done} missed`) : "Your first fardh will show here."}</p></div>`;
+    <p class="note" style="margin:0">${t.due ? (t.done===t.due ? `Every fardh so far ✨ ${pct}%` : `${pct}% · ${t.due-t.done} missed${qz ? `, ${qz} made up as qaza 🤲` : ""}`) : "Your first fardh will show here."}</p></div>`;
 }
 function visPill(){
   const pub = isPub(S.myId), sure = S.confirmVis, n = S.groups.length;
@@ -827,19 +828,21 @@ function viewToday(){
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
     const st = t[p.k], end = waqtEnd(cfg,ds,p.k), close = new Date(+st+DAY), code = codeOf(S.myId,ds,p.k);
-    const future = now < st, live = now >= st && now < end, locked = now >= close, prayed = code.includes("f");
-    const tag = prayed ? `<span class="tag ok">MashaAllah ✨</span>` : future ? `<span class="tag">Upcoming</span>` : live ? `<span class="tag live">Now · ${dur(end-now)} left</span>` : locked ? `<span class="tag">Locked</span>` : `<span class="tag warn">Not logged</span>`;
+    const future = now < st, live = now >= st && now < end, locked = now >= close, prayed = code.includes("f"), madeUp = !prayed && code.includes("q");
+    const missedWaqt = !prayed && now >= end;   // its time has passed without the fardh logged
+    const tag = prayed ? `<span class="tag ok">MashaAllah ✨</span>` : madeUp ? `<span class="tag qz">Made up as qaza 🤲</span>` : future ? `<span class="tag">Upcoming</span>` : live ? `<span class="tag live">Now · ${dur(end-now)} left</span>` : locked ? `<span class="tag">Locked</span>` : `<span class="tag warn">Not logged</span>`;
     const dis = (!canLog || future || locked) ? "disabled" : "";
     html += `<article class="pr ${p.k} ${live?"current":""} ${future?"future":""}">
       <span class="orb ${p.k}" aria-hidden="true"></span>
       <div class="nm"><h3>${isFri && p.k==="dhuhr" ? "Dhuhr / Jumu'ah" : p.en}</h3><span class="bn">${isFri && p.k==="dhuhr" ? "যোহর / জুমা" : p.bn}</span></div>
       <div class="range num"><span>${fmtT(st,tz)} – ${fmtT(end,tz)}</span>${tag}</div>
       <div class="chips"><button class="fard ${prayed?"on":""} ${S.pop===ds+p.k+"f"?"pop":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="f" aria-pressed="${prayed}" aria-label="${p.en} fardh, ${p.f} rakat" ${dis}><span class="box" aria-hidden="true">${prayed?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`:""}</span>${prayed?"Fardh prayed":"Fardh"}<small>${p.f}</small></button>${p.chips.map(([c,l,r])=>`<button class="chip ${code.includes(c)?"on":""}" data-act="tog" data-ds="${ds}" data-k="${p.k}" data-c="${c}" aria-pressed="${code.includes(c)}" ${dis}>${l}<small>${r}</small></button>`).join("")}</div>
+      ${canLog && missedWaqt ? `<div class="qzrow"><button class="chip qz ${madeUp?"on":""}" data-act="qtog" data-ds="${ds}" data-k="${p.k}" aria-pressed="${madeUp}">🤲 ${madeUp ? "Prayed as qaza ✓" : "Prayed as qaza"}</button>${madeUp ? "" : `<small>Missed it? Mark it once you make it up.</small>`}</div>` : ""}
       ${isFri && p.k==="dhuhr" && !prayed ? `<p class="note">Prayed Jumu'ah? Tap Fardh, it counts for Dhuhr.</p>` : ""}
       ${p.k==="asr" && live && !prayed && S.dayOff===0 ? (now < new Date(+end - SUNSET_MIN*MIN)
         ? `<p class="note warn">Best before ${fmtT(new Date(+end - SUNSET_MIN*MIN),tz)}. The last ${SUNSET_MIN} minutes before Maghrib are makruh (the sun is setting).</p>`
         : `<p class="note warn">Haven't prayed Asr yet? Pray it now, before Maghrib at ${fmtT(end,tz)}. Delaying this late is disliked, but today's Asr is still valid, and much better than missing it.</p>`) : ""}
-      ${!future && !locked && !prayed && !live ? `<p class="note warn">Log by ${fmtShortDT(close,tz)} or it locks and your streak breaks.</p>` : ""}
+      ${!future && !locked && !prayed && !madeUp && !live ? `<p class="note warn">Log by ${fmtShortDT(close,tz)} or it locks and your streak breaks.</p>` : ""}
     </article>`;
   }
   const xc = codeOf(S.myId,ds,"x"), nf = times(cfg,addDays(ds,1)).fajr;
@@ -952,17 +955,17 @@ function gradesheet(id){
   const m = S.members[id], cfg = cfgOf(m), now = new Date(), today = appDay(cfg,now);
   let start = today.slice(0,8)+"01"; if (m?.joined && m.joined > start) start = m.joined;
   const showX = m.showExtras !== false || id===S.myId;
-  const per = P.map(p => ({p, due:0, done:0, s:0})); let tah=0, nights=0;
+  const per = P.map(p => ({p, due:0, done:0, s:0, q:0})); let tah=0, nights=0;
   for (let d=start; d<=today; d=addDays(d,1)){
     const t = times(cfg,d);
     const ex = id===S.myId && S.excused.has(d);
-    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || (!ex && !preJoin(m,d,t[o.p.k]))) o.due++; if (f) o.done++; if (c.includes("s") || c.includes("b")) o.s++; } });
+    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || (!ex && !preJoin(m,d,t[o.p.k]))) o.due++; if (f) o.done++; else if (c.includes("q")) o.q++; if (c.includes("s") || c.includes("b")) o.s++; } });
     nights++; if (codeOf(id,d,"x").includes("t")) tah++;
   }
   const month = new Date(today+"T12:00:00Z").toLocaleDateString("en-GB",{month:"long",timeZone:"UTC"});
   let h = `<div class="label">${month} gradesheet</div><table class="gs num"><thead><tr><th>Waqt</th><th>Fardh</th>${showX?"<th>Sunnah</th>":""}<th>Grade</th></tr></thead><tbody>`;
   per.forEach(o => { const pct = o.due ? o.done/o.due*100 : null;
-    h += `<tr><td>${o.p.en}<span class="bn">${o.p.bn}</span></td><td>${o.done}/${o.due}</td>${showX?`<td>${o.s}/${o.due}</td>`:""}<td class="g">${grade(pct)}</td></tr>`; });
+    h += `<tr><td>${o.p.en}<span class="bn">${o.p.bn}</span></td><td>${o.done}/${o.due}${o.q ? ` <span class="qtag" title="Made up as qaza">+${o.q} qaza</span>` : ""}</td>${showX?`<td>${o.s}/${o.due}</td>`:""}<td class="g">${grade(pct)}</td></tr>`; });
   h += `</tbody></table>`;
   if (showX) h += `<p class="note">Tahajjud on ${tah} of ${nights} nights this month.</p>`;
   return h + `<div class="label">Last 12 weeks</div>` + heatmap(id);
@@ -991,50 +994,83 @@ function viewMe(){
 /* ---------- weekly recap ---------- */
 function weekData(){
   const m = meDoc(), cfg = cfgOf(m), now = new Date(), today = appDay(cfg, now);
-  const days = [];
+  const days = []; let total = 0, done = 0, qaza = 0;
   for (let i=6; i>=0; i--){
-    const ds = addDays(today, -i), t = times(cfg, ds), st = dayState(S.myId, ds, now);
-    days.push({ds, label:new Date(ds+"T12:00:00Z").toLocaleDateString("en-GB",{weekday:"short",timeZone:"UTC"}).slice(0,2),
-      dots: P.map(p => codeOf(S.myId,ds,p.k).includes("f") ? "d" : (st.s==="na"||st.s==="ex"||t[p.k] > now || preJoin(m,ds,t[p.k])) ? "n" : "m")});
+    const ds = addDays(today, -i), t = times(cfg, ds), before = m.joined && ds < m.joined;
+    const ex = S.excused.has(ds) && !P.every(p => codeOf(S.myId,ds,p.k).includes("f"));
+    const dots = P.map(p => {
+      const c = codeOf(S.myId,ds,p.k);
+      if (before || ex || (!c.includes("f") && preJoin(m,ds,t[p.k]))) return "n";   // not counted
+      total++;
+      if (c.includes("f")){ done++; return "d"; }
+      if (c.includes("q")){ qaza++; return "q"; }
+      return t[p.k] > now ? "u" : "m";   // upcoming or missed
+    });
+    days.push({ds, label:new Date(ds+"T12:00:00Z").toLocaleDateString("en-GB",{weekday:"short",timeZone:"UTC"}).slice(0,2), dots});
   }
-  const s7 = memberSummary(S.myId,"7");
-  return {days, done:s7.done, due:s7.due, streak:streakFor(S.myId, now), from:days[0].ds, to:days[6].ds, name:m.name || ""};
+  const joinedMid = m.joined && m.joined > days[0].ds ? m.joined : null;
+  return {days, done, total, qaza, streak:streakFor(S.myId, now), from:joinedMid || days[0].ds, to:days[6].ds, joinedMid, name:m.name || ""};
 }
 function weekCard(){
   const w = weekData();
-  return `<section class="panel week"><div class="sechead"><h3>📊 This week</h3><p class="num">${w.done}/${w.due} fardh</p></div>
+  return `<section class="panel week"><div class="sechead"><h3>📊 This week</h3><p class="num">${w.done}/${w.total} fardh${w.joinedMid ? " · since you joined" : ""}</p></div>
     <div class="wgrid">${w.days.map(d => `<div class="wcol"><div class="wdots">${d.dots.map(x=>`<i class="${x}"></i>`).join("")}</div><small>${d.label}</small></div>`).join("")}</div>
     <div class="btns"><button class="primary" data-act="recap">📸 Share my week</button></div></section>`;
 }
 async function drawWeekCard(w){
   try { await document.fonts.ready; } catch {}
   const bn = LANG === "bn", c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
-  const g = c.getContext("2d"), F = (sz, wt=800) => `${wt} ${sz}px "Baloo Da 2", Nunito, system-ui, sans-serif`;
-  const bg = g.createLinearGradient(0,0,1080,1920); bg.addColorStop(0,"#FFD3E2"); bg.addColorStop(.55,"#E9DDFF"); bg.addColorStop(1,"#C9B6FF");
+  const g = c.getContext("2d"), F = (sz, wt=800) => `${wt} ${sz}px "Baloo Da 2", Nunito, system-ui, sans-serif`, N = n => bn ? toBn(n) : String(n);
+  // dreamy background
+  const bg = g.createLinearGradient(0,0,0,1920); bg.addColorStop(0,"#FFE0EC"); bg.addColorStop(.5,"#F3E6FF"); bg.addColorStop(1,"#D9C8FF");
   g.fillStyle = bg; g.fillRect(0,0,1080,1920);
-  // sparkles
-  g.fillStyle = "rgba(255,255,255,.55)"; for (const [x,y,r] of [[140,220,10],[930,300,14],[880,1500,9],[170,1650,12],[960,820,7],[90,980,8]]){ g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
-  g.textAlign = "center"; g.fillStyle = "#4A3A5E";
+  const blob = (x,y,r,col) => { const rg = g.createRadialGradient(x,y,0,x,y,r); rg.addColorStop(0,col); rg.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle = rg; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); };
+  blob(160,260,320,"rgba(255,170,200,.55)"); blob(950,1650,380,"rgba(185,160,255,.5)"); blob(980,420,220,"rgba(255,230,160,.45)");
+  const star = (x,y,r,col) => { g.fillStyle = col; g.beginPath(); for (let i=0;i<8;i++){ const a = i*Math.PI/4, rr = i%2 ? r*.38 : r; g.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr); } g.closePath(); g.fill(); };
+  for (const [x,y,r] of [[120,150,26],[960,170,34],[90,820,18],[1000,760,22],[140,1560,24],[930,1290,16],[540,105,14]]) star(x,y,r,"rgba(255,255,255,.9)");
+  const heart = (x,y,s,fill,stroke) => { g.beginPath(); g.moveTo(x, y+s*.35);
+    g.bezierCurveTo(x-s*1.05, y-s*.35, x-s*.45, y-s*1.05, x, y-s*.42); g.bezierCurveTo(x+s*.45, y-s*1.05, x+s*1.05, y-s*.35, x, y+s*.35);
+    g.closePath(); if (fill){ g.fillStyle = fill; g.fill(); } if (stroke){ g.lineWidth = 6; g.strokeStyle = stroke; g.stroke(); } };
+  // moon badge
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(540,190,70,0,7); g.fill();
+  g.font = F(80); g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("🌙", 540, 196); g.textBaseline = "alphabetic";
+  g.fillStyle = "#4A3A5E"; g.font = F(76); g.fillText(bn ? "আমার নামাজের সপ্তাহ" : "my namaz week", 540, 365);
   const fmt = ds => new Date(ds+"T12:00:00Z").toLocaleDateString(bn?"bn-BD":"en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
-  g.font = F(64); g.fillText(bn ? "আমার নামাজের সপ্তাহ" : "My namaz week", 540, 300);
-  g.font = F(40,700); g.fillStyle = "#8E78A8"; g.fillText(`${fmt(w.from)} – ${fmt(w.to)}`, 540, 370);
-  // big number card
-  g.fillStyle = "rgba(255,255,255,.85)"; roundRect(g, 140, 450, 800, 470, 60); g.fill();
-  g.fillStyle = "#E0336F"; g.font = F(230); const num = bn ? `${toBn(w.done)}/${toBn(w.due)}` : `${w.done}/${w.due}`; g.fillText(num, 540, 720);
-  g.fillStyle = "#4A3A5E"; g.font = F(52,800); g.fillText(bn ? "ফরজ পড়েছি" : "fardh prayed", 540, 810);
-  if (w.due && w.done === w.due){ g.font = F(42,700); g.fillStyle = "#2EAF86"; g.fillText(bn ? "মাশাআল্লাহ, একটাও বাদ যায়নি ✨" : "MashaAllah, not one missed ✨", 540, 880); }
-  // dots grid
-  const x0 = 175, gap = 122;
+  g.font = F(38,700); g.fillStyle = "#9A87AE"; g.fillText((w.joinedMid ? (bn ? "যোগ দেওয়ার পর থেকে · " : "since I joined · ") : "") + `${fmt(w.from)} – ${fmt(w.to)}`, 540, 425);
+  // big score sticker
+  g.save(); g.translate(540, 660); g.rotate(-0.03);
+  g.fillStyle = "rgba(255,255,255,.92)"; roundRect(g, -380, -175, 760, 350, 90); g.fill();
+  g.lineWidth = 8; g.setLineDash([22,16]); g.strokeStyle = "#FFB3C7"; roundRect(g, -352, -147, 704, 294, 70); g.stroke(); g.setLineDash([]);
+  const pct = w.total ? w.done / w.total : 0;
+  g.fillStyle = "#E0336F"; g.font = F(200); g.fillText(`${N(w.done)}/${N(w.total)}`, 0, 50);
+  g.fillStyle = "#4A3A5E"; g.font = F(46,800); g.fillText(bn ? "ফরজ পড়েছি ✨" : "fardh prayed ✨", 0, 125);
+  g.restore();
+  // hearts grid
+  const x0 = 192, gap = 116, y0 = 935, rowGap = 92;
   w.days.forEach((d,i) => { const x = x0 + i*gap;
-    d.dots.forEach((s,j) => { const y = 1030 + j*78; g.beginPath(); g.arc(x, y, 26, 0, 7);
-      if (s==="d"){ g.fillStyle = "#FF7AA2"; g.fill(); } else if (s==="m"){ g.lineWidth = 6; g.strokeStyle = "#FF7AA2"; g.stroke(); } else { g.fillStyle = "rgba(255,255,255,.7)"; g.fill(); } });
-    g.fillStyle = "#8E78A8"; g.font = F(34,800); g.fillText(bn ? new Date(d.ds+"T12:00:00Z").toLocaleDateString("bn-BD",{weekday:"narrow",timeZone:"UTC"}) : d.label, x, 1450); });
-  // streak
-  g.font = F(64); g.fillStyle = "#4A3A5E";
-  g.fillText(w.streak ? (bn ? `🔥 ${toBn(w.streak)} দিনের স্ট্রিক` : `🔥 ${w.streak}-day streak`) : (bn ? "🌱 নতুন স্ট্রিক শুরু হচ্ছে" : "🌱 New streak starting"), 540, 1590);
-  g.font = F(36,700); g.fillStyle = "#8E78A8"; g.fillText(bn ? "প্রতিদিন পাঁচ ওয়াক্ত, বন্ধুদের সাথে" : "five a day, with my friends", 540, 1650);
-  // footer
-  g.font = F(40); g.fillStyle = "#4A3A5E"; g.fillText("🌙 Namaz Board", 540, 1800);
+    d.dots.forEach((st,j) => { const y = y0 + j*rowGap;
+      if (st==="d") heart(x, y, 34, "#FF6F9E");
+      else if (st==="q") heart(x, y, 34, "#B9A6F5");
+      else if (st==="m") heart(x, y, 30, null, "#FFB3C7");
+      else { g.fillStyle = "rgba(255,255,255,.75)"; g.beginPath(); g.arc(x, y-4, 11, 0, 7); g.fill(); } });
+    g.fillStyle = "#9A87AE"; g.font = F(34,800);
+    g.fillText(bn ? new Date(d.ds+"T12:00:00Z").toLocaleDateString("bn-BD",{weekday:"narrow",timeZone:"UTC"}) : d.label, x, y0 + 5*rowGap - 10); });
+  // legend
+  g.font = F(30,700); g.fillStyle = "#9A87AE"; g.textAlign = "left";
+  const leg = [["#FF6F9E", bn ? "সময়মতো" : "on time"], ...(w.qaza ? [["#B9A6F5", bn ? "কাজা" : "qaza"]] : [])];
+  let lx = 540 - (leg.length * 220) / 2 + 40;
+  for (const [col, txt] of leg){ heart(lx, 1430, 18, col); g.fillStyle = "#9A87AE"; g.fillText(txt, lx + 30, 1442); lx += 220; }
+  g.textAlign = "center";
+  // streak pill
+  const pillTxt = w.streak ? (bn ? `🔥 ${toBn(w.streak)} দিনের স্ট্রিক` : `🔥 ${w.streak}-day streak`) : (bn ? "🌱 নতুন স্ট্রিক আসছে" : "🌱 new streak loading");
+  g.font = F(58); const pw = g.measureText(pillTxt).width + 110;
+  g.fillStyle = "#fff"; roundRect(g, 540 - pw/2, 1500, pw, 110, 55); g.fill();
+  g.fillStyle = "#4A3A5E"; g.fillText(pillTxt, 540, 1575);
+  const vibe = pct === 1 ? (bn ? "একটাও বাদ যায়নি, আলহামদুলিল্লাহ 🤍" : "didn't miss a single one, alhamdulillah 🤍")
+    : pct >= .8 ? (bn ? "আলহামদুলিল্লাহ, এক ওয়াক্ত করে 🌸" : "alhamdulillah, one namaz at a time 🌸")
+    : (bn ? "ছোট ছোট পদক্ষেপ, প্রতিদিন 🌱" : "small steps, every single day 🌱");
+  g.font = F(38,700); g.fillStyle = "#8E78A8"; g.fillText(vibe, 540, 1690);
+  g.font = F(38); g.fillStyle = "#4A3A5E"; g.fillText("Namaz Board", 540, 1830);
   return c;
 }
 const toBn = n => String(n).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
@@ -1052,22 +1088,39 @@ function badgeShelf(best){
     <div class="shelf">${MILESTONES.map(x => `<div class="sbadge ${best>=x.n?"on":""}"><span>${x.e}</span><b>${x.t}</b><small>${best>=x.n ? "Earned" : `${x.n - best} to go`}</small></div>`).join("")}</div></section>`;
 }
 const QAZA_W = [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"],["witr","Witr"]];
+/* Fardh missed since joining (locked, not prayed, not made up as qaza, not on an excused day). */
+function autoMissed(){
+  const m = meDoc(), out = {}; if (!m?.joined) return out;
+  const cfg = cfgOf(m), now = new Date(), today = appDay(cfg, now);
+  for (let d = m.joined, i = 0; d <= today && i < 4000; d = addDays(d,1), i++){
+    if (S.excused.has(d) && !P.every(p => codeOf(S.myId,d,p.k).includes("f"))) continue;
+    const t = times(cfg, d);
+    for (const p of P){
+      const c = codeOf(S.myId,d,p.k);
+      if (c.includes("f") || c.includes("q") || preJoin(m,d,t[p.k]) || now < new Date(+t[p.k]+DAY)) continue;
+      out[p.k] = (out[p.k]||0) + 1;
+    }
+  }
+  return out;
+}
 function qazaPanel(){
   if (!S.qazaReady) return "";
-  const rows = QAZA_W.map(([k,l]) => { const q = S.qaza[k] || {owed:0, done:0}, left = Math.max(0, q.owed - q.done);
+  const auto = autoMissed();
+  let owedAll = 0, doneAll = 0;
+  const rows = QAZA_W.map(([k,l]) => { const q = S.qaza[k] || {owed:0, done:0}, a = auto[k] || 0, total = q.owed + a, done = Math.min(total, q.done), left = total - done;
+    owedAll += total; doneAll += done;
     return `<div class="qrow"><b>${l}</b>
-      <label class="qown">Missed<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
-      <span class="qleft num">${left ? `${left} left` : q.owed ? "All made up ✨" : "–"}</span>
+      <label class="qown">Before the app<input type="number" min="0" max="100000" inputmode="numeric" data-qown="${k}" value="${q.owed}"></label>
+      <span class="qleft num">${left ? `${left} left` : total ? "All made up ✨" : "–"}${a ? `<small>+${a} missed in the app</small>` : ""}</span>
       <button class="ghost" data-act="qdone" data-k="${k}" ${left?"":"disabled"}>✓ Made one up</button></div>`; }).join("");
-  const owed = QAZA_W.reduce((a,[k]) => a + (S.qaza[k]?.owed||0), 0), done = QAZA_W.reduce((a,[k]) => a + Math.min(S.qaza[k]?.owed||0, S.qaza[k]?.done||0), 0);
-  return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Keep count of missed prayers you're making up. Only you can see this.</p>
-    ${owed ? `<div class="bar"><i style="width:${(done/owed*100).toFixed(1)}%"></i></div><p class="note num">${done} of ${owed} made up</p>` : ""}
+  return `<section class="panel" id="qaza"><h3>Qaza 🔒</h3><p>Keep count of missed prayers you're making up. Only you can see this list.</p>
+    ${owedAll ? `<div class="bar"><i style="width:${(doneAll/owedAll*100).toFixed(1)}%"></i></div><p class="note num">${doneAll} of ${owedAll} made up</p>` : ""}
     <div class="qlist">${rows}</div>
-    <p class="note">Enter how many of each you owe, then tap <b>Made one up</b> each time you pray one.</p></section>`;
+    <p class="note">Fardh you miss in the app are added here by themselves. Type any you owe from <b>before the app</b>, then tap <b>Made one up</b> each time you pray one. For a missed fardh from today or yesterday, you can also tap <b>🤲 Prayed as qaza</b> on that namaz.</p></section>`;
 }
 async function saveQaza(k, patch){
-  const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch};
-  q.owed = Math.max(0, Math.min(100000, q.owed|0)); q.done = Math.max(0, Math.min(q.owed, q.done|0));
+  const q = {...(S.qaza[k] || {owed:0, done:0}), ...patch}, a = autoMissed()[k] || 0;
+  q.owed = Math.max(0, Math.min(100000, q.owed|0)); q.done = Math.max(0, Math.min(q.owed + a, q.done|0));
   const {error} = await S.sb.from("qaza").upsert({user_id:S.myId, waqt:k, owed:q.owed, done:q.done, updated_at:new Date().toISOString()}, {onConflict:"user_id,waqt"});
   if (error){ toast("Couldn't save that."); return false; }
   S.qaza[k] = q; return true;
@@ -1477,7 +1530,8 @@ document.addEventListener("click", async e => {
     try { localStorage.clear(); } catch {}
     await S.sb.auth.signOut(); toast("Your account and logs were deleted."); setTimeout(() => location.reload(), 1200);
   }
-  else if (a==="qdone"){ const k = b.dataset.k, q = S.qaza[k]; if (q && await saveQaza(k, {done:q.done+1})){ render(); toast(Math.max(0,q.owed-q.done-1) ? "Made up ✓ MashaAllah" : "All made up ✨ MashaAllah"); } }
+  else if (a==="qdone"){ const k = b.dataset.k, q = S.qaza[k] || {owed:0, done:0}, total = q.owed + (autoMissed()[k]||0);
+    if (await saveQaza(k, {done:q.done+1})){ render(); toast(total - q.done - 1 > 0 ? "Made up ✓ MashaAllah" : "All made up ✨ MashaAllah"); } }
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
   else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
@@ -1583,12 +1637,19 @@ document.addEventListener("click", async e => {
   else if (a==="day"){ S.dayOff = Number(b.dataset.d); render(); }
   else if (a==="period"){ S.period = b.dataset.p; render(); }
   else if (a==="open"){ S.open = S.open===b.dataset.id ? null : b.dataset.id; render(); }
+  else if (a==="qtog"){
+    const {ds,k} = b.dataset, cur = codeOf(S.myId,ds,k);
+    if (cur.includes("f")) return;
+    const next = cur.includes("q") ? cur.replace("q","") : cur + "q";
+    queue(ds,k,next); render(); if (next.includes("q")) toast("Made up as qaza 🤲 MashaAllah");
+  }
   else if (a==="tog"){
     const {ds,k,c} = b.dataset, cur = codeOf(S.myId,ds,k);
     const cfg = cfgOf(meDoc()), st = chipStart(cfg,ds,k,c), now = new Date();
     if (now < st || now >= new Date(+st+DAY)){ toast("That namaz's logging window has closed."); render(); return; }
     const before = dayState(S.myId,ds,now).s, sBefore = streakOf(S.myId,now);
-    const next = cur.includes(c) ? cur.replace(c,"") : cur + c;
+    let next = cur.includes(c) ? cur.replace(c,"") : cur + c;
+    if (c==="f" && next.includes("f")) next = next.replace("q","");   // prayed on time after all
     queue(ds,k,next);
     if (c==="f" && next.includes("f")) S.pop = ds+k+"f";
     render();

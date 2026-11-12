@@ -33,7 +33,7 @@ create table if not exists public.logs (
   user_id uuid not null references public.members(id) on delete cascade,
   day date not null,
   waqt text not null check (waqt in ('fajr','dhuhr','asr','maghrib','isha','x')),
-  code text not null default '' check (code ~ '^[fsbnwtida]*$'),
+  code text not null default '' check (code ~ '^[fqsbnwtida]*$'),
   updated_at timestamptz not null default now(),
   primary key (user_id, day, waqt)
 );

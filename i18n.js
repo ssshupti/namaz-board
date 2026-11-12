@@ -78,7 +78,9 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","📊 This week":"📊 এই সপ্তাহ","📸 Share my week":"📸 আমার সপ্তাহ শেয়ার করুন","Share 📸":"শেয়ার 📸","Close":"বন্ধ করুন","Saved to your downloads 📸":"ডাউনলোডে সেভ হয়েছে 📸",
+  "Language":"ভাষা","Made up as qaza 🤲":"কাজা আদায় হয়েছে 🤲","🤲 Prayed as qaza":"🤲 কাজা পড়েছি","🤲 Prayed as qaza ✓":"🤲 কাজা পড়েছি ✓","Missed it? Mark it once you make it up.":"বাদ গেছে? কাজা পড়ার পর চিহ্ন দিন।",
+  "Made up as qaza 🤲 MashaAllah":"কাজা আদায় হয়েছে 🤲 মাশাআল্লাহ","Before the app":"অ্যাপের আগে","Keep count of missed prayers you're making up. Only you can see this list.":"যে নামাজগুলো কাজা আদায় করছেন তার হিসাব। এই তালিকা শুধু আপনি দেখতে পান।",
+  "Fardh you miss in the app are added here by themselves. Type any you owe from":"অ্যাপে বাদ যাওয়া ফরজ নিজে থেকেই এখানে যোগ হয়।","before the app":"অ্যাপের আগের","made up as qaza":"কাজা হিসেবে আদায়","📊 This week":"📊 এই সপ্তাহ","📸 Share my week":"📸 আমার সপ্তাহ শেয়ার করুন","Share 📸":"শেয়ার 📸","Close":"বন্ধ করুন","Saved to your downloads 📸":"ডাউনলোডে সেভ হয়েছে 📸",
   "Weekly recap":"সাপ্তাহিক সারসংক্ষেপ","Sunday at 8 pm: your week's fardh and streak, with a card to share":"রবিবার রাত ৮টায়: সপ্তাহের ফরজ আর স্ট্রিক, শেয়ার করার কার্ডসহ","Leave this account?":"এই অ্যাকাউন্ট ছেড়ে যাবেন?","This account has no email, so the":"এই অ্যাকাউন্টে কোনো ইমেইল নেই, তাই","only":"একমাত্র","way back in is its Namaz Board code:":"ফেরার উপায় এর নামাজ বোর্ড কোড:","way back in is its Namaz Board code.":"ফেরার উপায় এর নামাজ বোর্ড কোড।","Copy code":"কোড কপি","Stay here":"এখানেই থাকুন","Leave account":"অ্যাকাউন্ট ছাড়ুন",
   "This phone doesn't have the code saved. Make a new one in Settings first if you want to come back.":"এই ফোনে কোডটি সেভ নেই। ফিরে আসতে চাইলে আগে সেটিংসে নতুন কোড বানান।","← Back to sign in":"← সাইন ইন পেজে ফিরুন","🌙 Last third of the night · best time for tahajjud":"🌙 রাতের শেষ তৃতীয়াংশ · তাহাজ্জুদের উত্তম সময়","No Gmail?":"Gmail নেই?","Sign up without email":"ইমেইল ছাড়া সাইন আপ করুন","Signed up without email before?":"আগে ইমেইল ছাড়া সাইন আপ করেছেন?","Sign in with your Namaz Board code":"নামাজ বোর্ড কোড দিয়ে সাইন ইন করুন",
   "No email or Google needed. Instead, we'll give you a":"ইমেইল বা Google লাগবে না। বদলে আপনি পাবেন একটি","Namaz Board code":"নামাজ বোর্ড কোড",": your own secret key for signing in.":": সাইন ইন করার জন্য আপনার নিজের গোপন চাবি।",
@@ -144,6 +146,10 @@ const DICT = {
 };
 
 const RULES = [
+  [/^\+(\d+) missed in the app$/, (_,n) => `+${n}টি অ্যাপে বাদ গেছে`],
+  [/^\+(\d+) qaza$/, (_,n) => `+${n} কাজা`],
+  [/^(\d+)% · (\d+) missed, (\d+) made up as qaza 🤲$/, (_,p,n,q) => `${p}% · ${n}টি বাদ গেছে, ${q}টি কাজা আদায় 🤲`],
+  [/^(\d+)\/(\d+) fardh · since you joined$/, (_,a,b) => `${a}/${b} ফরজ · যোগ দেওয়ার পর থেকে`],
   [/^Namaz Board is invite only\. Send a request and (.+) will approve it\.$/, (_,n) => `নামাজ বোর্ডে শুধু আমন্ত্রণে যোগ দেওয়া যায়। অনুরোধ পাঠান, ${n} অনুমোদন দেবেন।`],
   [/^(.+) has been asked to let$/, (_,n) => `${n}-কে অনুরোধ করা হয়েছে`],
   [/^Signed in as 🔑 no email \(signs in with a code\)$/, () => "সাইন ইন: 🔑 ইমেইল ছাড়া (কোড দিয়ে)"],

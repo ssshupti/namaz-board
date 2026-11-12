@@ -348,7 +348,7 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
 
 /* ---------- shared stats (streaks/grades friends can see; excused days stay private) ---------- */
 const DAY_MS = 24 * 3600e3;
-const PTS: Record<string, number> = { f: 10, s: 3, b: 2, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
+const PTS: Record<string, number> = { f: 10, q: 5, s: 3, b: 2, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
 type StatMember = { id: string; city: string; method: string; madhab: string; joined: string; created_at?: string; lat?: number | null; lng?: number | null; tz?: string | null };
 function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
   const tz = loc(cfg).tz, d = ymd(now, tz);
@@ -362,6 +362,23 @@ export function inQuiet(m: Partial<Member>, now: Date) {
   const [h, mi] = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now).split(":").map(Number);
   const cur = h * 60 + mi;
   return m.quiet_start < m.quiet_end ? cur >= m.quiet_start && cur < m.quiet_end : cur >= m.quiet_start || cur < m.quiet_end;
+}
+
+/* The week for the recap: the last 7 days, all 35 fardh, minus any before joining or on excused days. */
+export function recapCounts(m: StatMember, code: (day: string, waqt: string) => string, isEx: (day: string) => boolean, now: Date) {
+  const cfg = cfgOf(m), today = appDay(cfg, now);
+  let total = 0, done = 0, qaza = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i); if (m.joined && d < m.joined) continue;
+    const t = times(cfg, d), allF = FARDH.every((p) => code(d, p.k).includes("f"));
+    if (isEx(d) && !allF) continue;
+    for (const p of FARDH) {
+      const c = code(d, p.k);
+      if (!c.includes("f") && m.joined === d && m.created_at && t[p.k] < new Date(m.created_at)) continue;
+      total++; if (c.includes("f")) done++; else if (c.includes("q")) qaza++;
+    }
+  }
+  return { total, done, qaza };
 }
 
 export function computeStats(m: StatMember, code: (day: string, waqt: string) => string, isEx: (day: string) => boolean, now: Date) {
@@ -605,9 +622,9 @@ Deno.serve(async (req) => {
       db.from("excused").select("day").eq("user_id", m.id).gte("day", since10),
       db.from("member_stats").select("streak").eq("user_id", m.id).maybeSingle()]);
     const cm = new Map((lg ?? []).map((l) => [`${l.day}|${l.waqt}`, l.code ?? ""])), exs = new Set((ex ?? []).map((r) => r.day));
-    const s7 = computeStats(m as unknown as StatMember, (d, w) => cm.get(`${d}|${w}`) ?? "", (d) => exs.has(d), now);
-    if (!s7.wk_due) continue;
-    const { title, body } = recapMessage(s7.wk_done, s7.wk_due, st?.streak ?? s7.streak, m.lang === "bn");
+    const wk = recapCounts(m as unknown as StatMember, (d, w) => cm.get(`${d}|${w}`) ?? "", (d) => exs.has(d), now);
+    if (!wk.total) continue;
+    const { title, body } = recapMessage(wk.done, wk.total, st?.streak ?? 0, m.lang === "bn");
     sent += await send(m.id, title, body, "recap-" + day, "?view=recap");
   }
   // Keep the sent log small.
