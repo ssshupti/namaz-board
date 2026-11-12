@@ -1015,7 +1015,7 @@ function weekCard(){
   const w = weekData();
   return `<section class="panel week"><div class="sechead"><h3>📊 This week</h3><p class="num">${w.done}/${w.total} fardh${w.joinedMid ? " · since you joined" : ""}</p></div>
     <div class="wgrid">${w.days.map(d => `<div class="wcol"><div class="wdots">${d.dots.map(x=>`<i class="${x}"></i>`).join("")}</div><small>${d.label}</small></div>`).join("")}</div>
-    <div class="btns"><button class="primary" data-act="recap">📸 Share my week</button></div></section>`;
+    <div class="btns"><button class="primary" data-act="recap">⬇️ Download my week card</button></div></section>`;
 }
 async function drawWeekCard(w){
   try { await document.fonts.ready; } catch {}
@@ -1081,7 +1081,7 @@ async function openRecap(){
   const blob = await new Promise(r => canvas.toBlob(r, "image/png")); S.recapBlob = blob;
   let el = $("recapDlg"); if (!el){ el = document.createElement("div"); el.id = "recapDlg"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
   if (S.recapUrl) URL.revokeObjectURL(S.recapUrl); S.recapUrl = URL.createObjectURL(blob);
-  el.innerHTML = `<div class="tcard recap"><img src="${S.recapUrl}" alt="Your namaz week card"><div class="btns"><button class="primary" data-act="recapshare">${matchMedia("(pointer: coarse)").matches ? "Share 📸" : "Download ⬇️"}</button><button class="ghost" data-act="recapclose">Close</button></div></div>`;
+  el.innerHTML = `<div class="tcard recap"><img src="${S.recapUrl}" alt="Your namaz week card">${matchMedia("(pointer: coarse)").matches ? `<p class="note" style="text-align:center;margin:-4px 0 10px">Or press and hold the picture to save it to your photos.</p>` : ""}<div class="btns"><button class="primary" data-act="recapshare">Download ⬇️</button><button class="ghost" data-act="recapclose">Close</button></div></div>`;
 }
 function badgeShelf(best){
   return `<section class="panel"><h3>Badges</h3><p>Earned by praying all 5 fardh for days in a row. Your best streak: <b>${best}</b>.</p>
@@ -1263,7 +1263,7 @@ function viewAlerts(){
     <section class="panel"><h3>What to send me</h3>
       <label class="tog"><input type="checkbox" id="n-start" data-act="ntoggle" ${m.notifyStart!==false?"checked":""}><span><b>When each waqt starts</b><br><small>“🌸 It's Asr time · ends 5:14 pm”</small></span></label>
       <label class="tog"><input type="checkbox" id="n-end" data-act="ntoggle" ${m.notifyEnd!==false?"checked":""}><span><b>Streak saver</b><br><small>30 min before a waqt ends, only if you haven't logged its fardh</small></span></label>
-      <label class="tog"><input type="checkbox" id="n-recap" data-act="ntoggle" ${m.notifyRecap!==false?"checked":""}><span><b>Weekly recap</b><br><small>Sunday at 8 pm: your week's fardh and streak, with a card to share</small></span></label>
+      <label class="tog"><input type="checkbox" id="n-recap" data-act="ntoggle" ${m.notifyRecap!==false?"checked":""}><span><b>Weekly recap</b><br><small>Sunday at 8 pm: your week's fardh and streak, with a card you can save</small></span></label>
       <label class="tog"><input type="checkbox" id="n-jumuah" data-act="ntoggle" ${m.notifyJumuah?"checked":""}><span><b>Jumu'ah reminder</b><br><small>On Fridays, 1 hour before Dhuhr, with a nudge to read Surah Al-Kahf</small></span></label>
       <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>
     <section class="panel"><h3>Quiet hours</h3><p>No alerts during these hours, for example while you sleep. Alerts for Fajr may be skipped if they fall inside.</p>
@@ -1449,8 +1449,7 @@ document.addEventListener("click", async e => {
   else if (a==="recapclose"){ $("recapDlg")?.remove(); }
   else if (a==="recapshare"){
     const file = new File([S.recapBlob], "namaz-week.png", {type:"image/png"});
-    if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.({files:[file]})){ try { await navigator.share({files:[file]}); } catch {} return; }
-    const a2 = document.createElement("a"); a2.href = S.recapUrl; a2.download = "namaz-week.png"; document.body.appendChild(a2); a2.click(); a2.remove(); toast("Saved to your downloads 📸");
+    const a2 = document.createElement("a"); a2.href = S.recapUrl; a2.download = "namaz-week.png"; document.body.appendChild(a2); a2.click(); a2.remove(); toast("Saved to your downloads ⬇️");
   }
   else if (a==="leaveclose"){ $("leave")?.remove(); }
   else if (a==="nomail"){ S.loginMode = "new"; render(); }

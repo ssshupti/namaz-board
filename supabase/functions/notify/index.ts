@@ -296,8 +296,8 @@ export function recapDue(m: Member, now: Date) {
 }
 export function recapMessage(done: number, due: number, streak: number, bn: boolean) {
   const all = due > 0 && done === due;
-  if (bn) return { title: "📊 তোমার নামাজের সপ্তাহ", body: (all ? `মাশাআল্লাহ, এই সপ্তাহে সব ফরজ ✨ ${bnNum(String(done))}/${bnNum(String(due))}` : `এই সপ্তাহে ${bnNum(String(done))}/${bnNum(String(due))} ফরজ`) + (streak ? ` · 🔥 ${bnNum(String(streak))} দিনের স্ট্রিক` : "") + "। দেখতে আর শেয়ার করতে চাপো 📸" };
-  return { title: "📊 Your namaz week", body: (all ? `MashaAllah, every fardh this week ✨ ${done}/${due}` : `This week: ${done}/${due} fardh`) + (streak ? ` · 🔥 ${streak}-day streak` : "") + ". Tap to see it and share 📸" };
+  if (bn) return { title: "📊 তোমার নামাজের সপ্তাহ", body: (all ? `মাশাআল্লাহ, এই সপ্তাহে সব ফরজ ✨ ${bnNum(String(done))}/${bnNum(String(due))}` : `এই সপ্তাহে ${bnNum(String(done))}/${bnNum(String(due))} ফরজ`) + (streak ? ` · 🔥 ${bnNum(String(streak))} দিনের স্ট্রিক` : "") + "। পুরো সপ্তাহ দেখতে চাপো 📊" };
+  return { title: "📊 Your namaz week", body: (all ? `MashaAllah, every fardh this week ✨ ${done}/${due}` : `This week: ${done}/${due} fardh`) + (streak ? ` · 🔥 ${streak}-day streak` : "") + ". Tap to see your week 📊" };
 }
 
 export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
