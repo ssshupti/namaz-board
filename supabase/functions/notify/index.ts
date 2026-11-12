@@ -84,14 +84,19 @@ const CITIES: Record<string, { name: string; group: string; lat: number; lng: nu
   madrid:{name:"Madrid",group:"Spain",lat:40.4168,lng:-3.7038,tz:"Europe/Madrid",method:"MuslimWorldLeague"},
   lisbon:{name:"Lisbon",group:"Portugal",lat:38.7223,lng:-9.1393,tz:"Europe/Lisbon",method:"MuslimWorldLeague"},
   amsterdam:{name:"Amsterdam",group:"Netherlands",lat:52.3676,lng:4.9041,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
+  almere:{name:"Almere",group:"Netherlands",lat:52.3508,lng:5.2647,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
   stockholm:{name:"Stockholm",group:"Sweden",lat:59.3293,lng:18.0686,tz:"Europe/Stockholm",method:"MuslimWorldLeague"},
   newyork:{name:"New York",group:"USA",lat:40.7128,lng:-74.006,tz:"America/New_York",method:"NorthAmerica"},
   chicago:{name:"Chicago",group:"USA",lat:41.8781,lng:-87.6298,tz:"America/Chicago",method:"NorthAmerica"},
   houston:{name:"Houston",group:"USA",lat:29.7604,lng:-95.3698,tz:"America/Chicago",method:"NorthAmerica"},
   losangeles:{name:"Los Angeles",group:"USA",lat:34.0522,lng:-118.2437,tz:"America/Los_Angeles",method:"NorthAmerica"},
   toronto:{name:"Toronto",group:"Canada",lat:43.6532,lng:-79.3832,tz:"America/Toronto",method:"NorthAmerica"},
+  regina:{name:"Regina",group:"Canada",lat:50.4452,lng:-104.6189,tz:"America/Regina",method:"NorthAmerica"},
+  saskatoon:{name:"Saskatoon",group:"Canada",lat:52.1332,lng:-106.67,tz:"America/Regina",method:"NorthAmerica"},
   sydney:{name:"Sydney",group:"Australia",lat:-33.8688,lng:151.2093,tz:"Australia/Sydney",method:"MuslimWorldLeague"},
   melbourne:{name:"Melbourne",group:"Australia",lat:-37.8136,lng:144.9631,tz:"Australia/Melbourne",method:"MuslimWorldLeague"},
+  brisbane:{name:"Brisbane",group:"Australia",lat:-27.4698,lng:153.0251,tz:"Australia/Brisbane",method:"MuslimWorldLeague"},
+  goldcoast:{name:"Gold Coast",group:"Australia",lat:-28.0167,lng:153.4,tz:"Australia/Brisbane",method:"MuslimWorldLeague"},
   tokyo:{name:"Tokyo",group:"Japan",lat:35.6762,lng:139.6503,tz:"Asia/Tokyo",method:"MuslimWorldLeague"}
 };
 const METHODS = ["Karachi", "MoonsightingCommittee", "MuslimWorldLeague", "NorthAmerica", "UmmAlQura", "Dubai", "Qatar", "Kuwait", "Egyptian", "Turkey", "Singapore"];

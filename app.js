@@ -74,14 +74,19 @@ const CITIES = {
   madrid:{name:"Madrid",group:"Spain",lat:40.4168,lng:-3.7038,tz:"Europe/Madrid",method:"MuslimWorldLeague"},
   lisbon:{name:"Lisbon",group:"Portugal",lat:38.7223,lng:-9.1393,tz:"Europe/Lisbon",method:"MuslimWorldLeague"},
   amsterdam:{name:"Amsterdam",group:"Netherlands",lat:52.3676,lng:4.9041,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
+  almere:{name:"Almere",group:"Netherlands",lat:52.3508,lng:5.2647,tz:"Europe/Amsterdam",method:"MuslimWorldLeague"},
   stockholm:{name:"Stockholm",group:"Sweden",lat:59.3293,lng:18.0686,tz:"Europe/Stockholm",method:"MuslimWorldLeague"},
   newyork:{name:"New York",group:"USA",lat:40.7128,lng:-74.006,tz:"America/New_York",method:"NorthAmerica"},
   chicago:{name:"Chicago",group:"USA",lat:41.8781,lng:-87.6298,tz:"America/Chicago",method:"NorthAmerica"},
   houston:{name:"Houston",group:"USA",lat:29.7604,lng:-95.3698,tz:"America/Chicago",method:"NorthAmerica"},
   losangeles:{name:"Los Angeles",group:"USA",lat:34.0522,lng:-118.2437,tz:"America/Los_Angeles",method:"NorthAmerica"},
   toronto:{name:"Toronto",group:"Canada",lat:43.6532,lng:-79.3832,tz:"America/Toronto",method:"NorthAmerica"},
+  regina:{name:"Regina",group:"Canada",lat:50.4452,lng:-104.6189,tz:"America/Regina",method:"NorthAmerica"},
+  saskatoon:{name:"Saskatoon",group:"Canada",lat:52.1332,lng:-106.67,tz:"America/Regina",method:"NorthAmerica"},
   sydney:{name:"Sydney",group:"Australia",lat:-33.8688,lng:151.2093,tz:"Australia/Sydney",method:"MuslimWorldLeague"},
   melbourne:{name:"Melbourne",group:"Australia",lat:-37.8136,lng:144.9631,tz:"Australia/Melbourne",method:"MuslimWorldLeague"},
+  brisbane:{name:"Brisbane",group:"Australia",lat:-27.4698,lng:153.0251,tz:"Australia/Brisbane",method:"MuslimWorldLeague"},
+  goldcoast:{name:"Gold Coast",group:"Australia",lat:-28.0167,lng:153.4,tz:"Australia/Brisbane",method:"MuslimWorldLeague"},
   tokyo:{name:"Tokyo",group:"Japan",lat:35.6762,lng:139.6503,tz:"Asia/Tokyo",method:"MuslimWorldLeague"}
 };
 const METHODS = {Karachi:"Karachi (Bangladesh, India, Pakistan)",MoonsightingCommittee:"Moonsighting Committee (UK, Ireland)",MuslimWorldLeague:"Muslim World League (Europe, others)",NorthAmerica:"ISNA (North America)",UmmAlQura:"Umm al-Qura (Saudi, Gulf)",Dubai:"Dubai (UAE)",Qatar:"Qatar",Kuwait:"Kuwait",Egyptian:"Egyptian",Turkey:"Turkey (Diyanet)",Singapore:"Singapore, Malaysia, Indonesia"};
@@ -146,8 +151,15 @@ const dur = ms => { const m=Math.max(0,Math.round(ms/60000)); const h=Math.floor
 const clock = ms => { const s=Math.max(0,Math.floor(ms/1000)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}`; };
 /* Where times are calculated for: a city from the list, or "custom" = the person's own (rounded) location. */
 const DEVICE_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })();
-const TZ_ALIAS = {"Asia/Calcutta":"Asia/Kolkata","Asia/Dacca":"Asia/Dhaka","Europe/Belfast":"Europe/London","America/Detroit":"America/New_York"};
-function guessCity(){ const tz = TZ_ALIAS[DEVICE_TZ] || DEVICE_TZ; return Object.keys(CITIES).find(k => CITIES[k].tz===tz) || DEFAULT.city; }
+const TZ_ALIAS = {"America/Swift_Current":"America/Regina","Canada/Saskatchewan":"America/Regina","Australia/Lindeman":"Australia/Brisbane","Australia/Queensland":"Australia/Brisbane","Australia/NSW":"Australia/Sydney","Australia/ACT":"Australia/Sydney","Australia/Canberra":"Australia/Sydney","Europe/Jersey":"Europe/London","Europe/Guernsey":"Europe/London","Europe/Isle_of_Man":"Europe/London","Asia/Calcutta":"Asia/Kolkata","Asia/Dacca":"Asia/Dhaka","Europe/Belfast":"Europe/London","America/Detroit":"America/New_York"};
+function guessCity(){
+  const tz = TZ_ALIAS[DEVICE_TZ] || DEVICE_TZ;
+  const exact = Object.keys(CITIES).find(k => CITIES[k].tz===tz); if (exact) return exact;
+  // Unknown zone: pick a listed city on the same clock today (the person can still choose theirs or share location).
+  const off = z => { try { const d = new Date(), f = new Intl.DateTimeFormat("en-US",{timeZone:z,hourCycle:"h23",year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}).formatToParts(d).reduce((o,p)=>(o[p.type]=p.value,o),{});
+    return Math.round((Date.UTC(f.year,f.month-1,f.day,f.hour,f.minute) - d.getTime())/60000/15); } catch { return null; } };
+  const mine = off(tz); return Object.keys(CITIES).find(k => off(CITIES[k].tz)===mine) || DEFAULT.city;
+}
 const cfgOf = m => {
   const custom = m?.city==="custom" && Number.isFinite(m?.lat) && Number.isFinite(m?.lng) && m?.tz;
   const city = custom ? "custom" : (CITIES[m?.city] ? m.city : guessCity());
