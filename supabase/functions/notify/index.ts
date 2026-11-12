@@ -233,20 +233,9 @@ export function computeStats(m: StatMember, code: (day: string, waqt: string) =>
     return { due, done, pts };
   };
   const w = range(addDays(today, -6)), mo = range(today.slice(0, 8) + "01");
-  // Heart streaks: days in a row with at least k fardh. Excused days pause; an unfinished day breaks tier k only once k is out of reach.
-  const h = [0, 0, 0, 0, 0], alive = [true, true, true, true, true];
-  for (let i = 0, d = today; i < 1500 && alive.some(Boolean); i++, d = addDays(d, -1)) {
-    if (m.joined && d < m.joined) break;
-    const t = times(cfg, d);
-    const done = FARDH.filter((p) => code(d, p.k).includes("f")).length;
-    if (isEx(d) && done < 5) continue;
-    const reachable = done + FARDH.filter((p) => !code(d, p.k).includes("f") && +now < +t[p.k] + DAY_MS).length;
-    for (let k = 1; k <= 5; k++) {
-      if (!alive[k - 1]) continue;
-      if (done >= k) h[k - 1]++; else if (reachable < k) alive[k - 1] = false;
-    }
-  }
-  return { user_id: m.id, streak, best, wk_due: w.due, wk_done: w.done, mo_due: mo.due, mo_done: mo.done, mo_pts: mo.pts, h1: h[0], h2: h[1], h3: h[2], h4: h[3] };
+  // Every fardh since joining: prayed / due (a fardh is due once its waqt has started).
+  const all = range(m.joined || today);
+  return { user_id: m.id, streak, best, wk_due: w.due, wk_done: w.done, mo_due: mo.due, mo_done: mo.done, mo_pts: mo.pts, f_due: all.due, f_done: all.done };
 }
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, x-client-info, apikey, content-type" } });
@@ -308,19 +297,18 @@ Deno.serve(async (req) => {
   let statsUpdated = 0;
   if (now.getUTCMinutes() % 15 === 0 || (payload as { stats?: boolean }).stats) {
     const { data: all } = await db.from("members").select("*");
-    const since = addDays(now.toISOString().slice(0, 10), -130);
     const codes = new Map<string, string>();
     for (let from = 0; ; from += 1000) {
-      const { data } = await db.from("logs").select("user_id,day,waqt,code").gte("day", since).range(from, from + 999);
+      const { data } = await db.from("logs").select("user_id,day,waqt,code").order("day").range(from, from + 999);
       for (const l of data ?? []) codes.set(`${l.user_id}|${l.day}|${l.waqt}`, l.code ?? "");
       if (!data || data.length < 1000) break;
     }
-    const { data: exRows } = await db.from("excused").select("user_id,day").gte("day", since);
+    const { data: exRows } = await db.from("excused").select("user_id,day");
     const ex = new Set((exRows ?? []).map((r) => `${r.user_id}|${r.day}`));
     const rows = (all ?? []).map((m) => ({ ...computeStats(m as StatMember, (d, w) => codes.get(`${m.id}|${d}|${w}`) ?? "", (d) => ex.has(`${m.id}|${d}`), now), updated_at: now.toISOString() }));
     if (rows.length) {
       let { error } = await db.from("member_stats").upsert(rows, { onConflict: "user_id" });
-      if (error) ({ error } = await db.from("member_stats").upsert(rows.map(({ h1: _a, h2: _b, h3: _c, h4: _d, ...r }) => r), { onConflict: "user_id" }));
+      if (error) ({ error } = await db.from("member_stats").upsert(rows.map(({ f_due: _a, f_done: _b, ...r }) => r), { onConflict: "user_id" }));
       if (!error) statsUpdated = rows.length;
     }
   }

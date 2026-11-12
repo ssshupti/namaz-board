@@ -20,7 +20,7 @@ const DICT = {
   "Pray all 5 fardh in a day to light the flame.":"এক দিনে পাঁচ ওয়াক্ত ফরজ পড়ে আগুন জ্বালান।",
   "Today is excused, so your streak is paused, not broken. Only you can see this.":"আজকের দিনটি ছাড় দেওয়া, তাই স্ট্রিক থেমে আছে, ভাঙেনি। এটা শুধু আপনি দেখতে পান।",
   "🌍 Public":"🌍 পাবলিক","🔒 Private":"🔒 প্রাইভেট","Make private? Tap again":"প্রাইভেট করবেন? আবার চাপুন","Make public? Tap again":"পাবলিক করবেন? আবার চাপুন",
-  "Heart streaks":"হার্ট স্ট্রিক","days in a row with at least ♥ fardh":"পরপর যত দিন অন্তত ♥ ওয়াক্ত ফরজ",
+  "Fardh since you joined":"যোগ দেওয়ার পর থেকে ফরজ","Your first fardh will show here.":"আপনার প্রথম ফরজ এখানে দেখাবে।","Since joining":"যোগ দেওয়ার পর থেকে","All":"সব",
   "Everyone's streaks":"সবার স্ট্রিক","Ring = today's fardh":"রিং = আজকের ফরজ","You":"আপনি","you":"আপনি",
   // today list
   "Today's namaz":"আজকের নামাজ","Yesterday's namaz":"গতকালের নামাজ",
@@ -123,6 +123,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Every fardh so far ✨ (\d+)%$/, (_,p) => `এ পর্যন্ত সব ফরজ ✨ ${p}%`],
+  [/^(\d+)% · (\d+) missed$/, (_,p,n) => `${p}% · ${n}টি বাদ গেছে`],
   [/^💌 ?(\d+) (?:person wants|people want) to join$/, (_,n) => `💌 ${n} জন যোগ দিতে চান`],
   [/^(\d+) (?:person wants|people want) to join$/, (_,n) => `${n} জন যোগ দিতে চান`],
   [/^(.+) · (\d+) (min|h|d) ago$/, (_,e,n,u) => `${e} · ${n} ${({min:"মিনিট",h:"ঘণ্টা",d:"দিন"})[u]} আগে`],

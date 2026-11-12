@@ -342,17 +342,13 @@ img{max-width:100%}
 #main > *{min-width:0;max-width:100%}
 .gchips{width:100%}
 /* heart streaks */
-.hearts{grid-column:1/-1;margin-top:10px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
-.hlabel{font-weight:800;font-size:14px}
-.hlabel small{font-weight:600;color:var(--muted);font-size:12px;margin-left:4px}
-.hrow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.hcell{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--off);border-radius:16px;padding:8px 2px 6px}
-.hcell.on{background:color-mix(in srgb,var(--rose) 12%,var(--surface))}
-.hcell svg{width:30px;height:28px}
-.hcell b{font-family:var(--display);font-size:18px;font-weight:800;line-height:1}
-.hcell:not(.on) b{color:var(--muted)}
-.mini.heart{color:var(--warn)}
-.mini.heart svg{width:16px;height:15px}
+.tally{grid-column:1/-1;margin-top:10px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+.tally .tl{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tlabel{font-weight:800;font-size:14px}
+.tnum{font-family:var(--display);font-size:16px;color:var(--muted);font-weight:700}
+.tnum b{font-size:26px;color:var(--ink)}
+.tbar{height:10px;border-radius:99px;background:var(--off);overflow:hidden}
+.tbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#FFB3C7,#E0336F)}
 /* watermark */
 .wm{text-align:center;margin:6px 0 0;font-size:12px;font-weight:700;color:var(--muted);opacity:.75;letter-spacing:.02em}
 /* welcome tour */
