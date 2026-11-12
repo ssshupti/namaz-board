@@ -489,3 +489,7 @@ html[lang="bn"] .bn{display:none}
 .invbtns{display:flex;flex-wrap:wrap;gap:8px}
 .invbtns > *{flex:1 1 auto}
 .ghost.on{background:var(--off)}
+.invitehero{text-align:center;border:2px dashed var(--rose);background:linear-gradient(160deg,var(--surface),color-mix(in srgb,var(--rose) 10%,var(--surface)))}
+.invitehero .ih-emoji{font-size:44px;line-height:1;margin-bottom:6px}
+.invitehero h3{font-size:22px;line-height:1.25}
+.invitehero h3 span{color:var(--rose);font-size:28px}

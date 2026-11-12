@@ -872,15 +872,15 @@ function viewBoard(){
   let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy the code">Code <b data-notr>${g.code}</b> ⧉</button></div>
     <div class="btns"><button class="ghost ${S.inviteOpen?"on":""}" data-act="ginvitemenu" aria-expanded="${!!S.inviteOpen}">Invite</button><button class="ghost" data-act="gmanage">${isOwner?"Manage":"Info"}</button></div></section>`;
   if (S.inviteOpen){
-    const msg = encodeURIComponent(`Join my Namaz Board group "${g.name}" 🌸 ${link}`);
+    const msg = encodeURIComponent(inviteText(g.name, link));
     html += `<section class="panel invitebox"><h3>Invite to <span data-notr>${esc(g.name)}</span></h3>
       <div class="invlink" data-notr>${esc(link)}</div>
       <div class="invbtns">
-        <button class="primary" data-act="ginvite" data-link="${esc(link)}">🔗 Copy link</button>
+        <button class="primary" data-act="ginvite" data-link="${esc(link)}" data-name="${esc(g.name)}">🔗 Copy invite</button>
         <a class="ghost btnlink" href="https://wa.me/?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
-        <a class="ghost btnlink" href="https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Join my Namaz Board group 🌸")}" target="_blank" rel="noopener">Telegram</a>
-        <a class="ghost btnlink" href="mailto:?subject=${encodeURIComponent("Join my Namaz Board group 🌸")}&body=${msg}">Email</a>
-        ${navigator.share ? `<button class="ghost" data-act="gshare" data-link="${esc(link)}">More…</button>` : ""}
+        <a class="ghost btnlink" href="https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`🌸 You're invited to join "${g.name}" on Namaz Board! Let's keep our namaz together.`)}" target="_blank" rel="noopener">Telegram</a>
+        <a class="ghost btnlink" href="mailto:?subject=${encodeURIComponent(`You're invited to "${g.name}" on Namaz Board 🌸`)}&body=${msg}">Email</a>
+        ${navigator.share ? `<button class="ghost" data-act="gshare" data-link="${esc(link)}" data-name="${esc(g.name)}">More…</button>` : ""}
       </div>
       <p class="note">Or tell them the code <b data-notr>${g.code}</b> to type in <b>Join a group</b>.</p></section>`;
   }
@@ -1353,9 +1353,12 @@ function viewLogin(){
     <p class="altlogin">Signed up without email before? <button class="linkbtn" data-act="restore">Sign in with your Namaz Board code</button></p>
     <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
 }
+/* The text sent with an invite link: says clearly it's an invitation to a group, link on its own line so it stays tappable. */
+const inviteText = (name, link) => `🌸 You're invited to join "${name}" on Namaz Board!\nLet's keep our namaz together 🤲\n\nTap to join: ${link}`;
 function inviteBanner(){
   const pv = S.linkGroup; if (!pv?.name) return "";
-  return `<div class="notice"><span>👥 You're invited to <b data-notr>${esc(pv.name)}</b>. Join the board first, then you'll be asked to join the group.</span></div>`;
+  return `<section class="panel invitehero"><div class="ih-emoji">💌</div><h3>You're invited to<br><span data-notr>${esc(pv.name)}</span></h3>
+    <p>${pv.members ? `${pv.members} friend${pv.members===1?"":"s"} already keeping their namaz here. ` : ""}Sign in below and ask to join, then you'll join the group.</p></section>`;
 }
 function viewNotInvited(){
   const owner = esc(CONF.ownerName||"the board owner");
@@ -1599,11 +1602,11 @@ document.addEventListener("click", async e => {
   else if (a==="gcancel"){ S.gform = null; render(); }
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
   else if (a==="ginvitemenu"){ S.inviteOpen = !S.inviteOpen; render(); }
-  else if (a==="gshare"){ try { await navigator.share({title:"Join my Namaz Board group 🌸", url:b.dataset.link}); } catch {} }
+  else if (a==="gshare"){ try { await navigator.share({title:`Join "${b.dataset.name}" on Namaz Board 🌸`, text:inviteText(b.dataset.name, b.dataset.link)}); } catch {} }
   else if (a==="ginvite"){
     // Just the link: pasted into a chat it becomes a tappable card that opens the group.
-    const link = b.dataset.link;
-    try { await navigator.clipboard.writeText(link); toast("Invite link copied 🔗 Paste it in a chat. Tapping it opens the group."); } catch { toast(link); }
+    const text = inviteText(b.dataset.name, b.dataset.link);
+    try { await navigator.clipboard.writeText(text); toast("Invite copied 🔗 Paste it in a chat. Tapping the link opens the group."); } catch { toast(b.dataset.link); }
   }
   else if (a==="gcopy"){
     try { await navigator.clipboard.writeText(b.dataset.code); toast(`Code ${b.dataset.code} copied. Friends type it in Join a group.`); } catch { toast(`Group code: ${b.dataset.code}`); }
