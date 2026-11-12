@@ -253,7 +253,7 @@ export const NUDGE_TEXT: Record<string, [string, string]> = {
   h4: ["🔥 streak go brrr", "🔥 স্ট্রিক চলছে ধুমসে"],
   h5: ["🫶 proud of u fr", "🫶 সত্যি তোমার জন্য গর্বিত"],
   r1: ["🤲 JazakAllah khair bestie", "🤲 জাযাকাল্লাহ খাইর দোস্ত"],
-  r2: ["🏃 omw to the musalla", "🏃 জায়নামাজের দিকে যাচ্ছি"],
+  r2: ["🏃 omw to the jaynamaz", "🏃 জায়নামাজের দিকে যাচ্ছি"],
   r3: ["✅ done & dusted", "✅ পড়া শেষ"],
   r4: ["😭 ok ok going", "😭 আচ্ছা আচ্ছা যাচ্ছি"],
 };
