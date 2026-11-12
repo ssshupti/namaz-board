@@ -78,7 +78,7 @@ const DICT = {
   "I'm hidden from the Everyone board. My groups still see my record.":"সবার বোর্ডে আমাকে দেখা যায় না। আমার গ্রুপ এখনো আমার রেকর্ড দেখে।",
   "Show my sunnah, nafl and tahajjud to my groups":"আমার গ্রুপকে আমার সুন্নত, নফল ও তাহাজ্জুদ দেখান",
   "✨ How Namaz Board works":"✨ নামাজ বোর্ড কীভাবে কাজ করে","Privacy":"গোপনীয়তা","Sign out":"সাইন আউট","Delete my account":"আমার অ্যাকাউন্ট মুছুন","Tap again: delete everything":"আবার চাপুন: সব মুছে যাবে",
-  "Language":"ভাষা","🌙 Last third of the night · best time for tahajjud":"🌙 রাতের শেষ তৃতীয়াংশ · তাহাজ্জুদের উত্তম সময়","No Gmail?":"Gmail নেই?","Sign up without email":"ইমেইল ছাড়া সাইন আপ করুন","Signed up without email before?":"আগে ইমেইল ছাড়া সাইন আপ করেছেন?","Sign in with your Namaz Board code":"নামাজ বোর্ড কোড দিয়ে সাইন ইন করুন",
+  "Language":"ভাষা","← Back to sign in":"← সাইন ইন পেজে ফিরুন","🌙 Last third of the night · best time for tahajjud":"🌙 রাতের শেষ তৃতীয়াংশ · তাহাজ্জুদের উত্তম সময়","No Gmail?":"Gmail নেই?","Sign up without email":"ইমেইল ছাড়া সাইন আপ করুন","Signed up without email before?":"আগে ইমেইল ছাড়া সাইন আপ করেছেন?","Sign in with your Namaz Board code":"নামাজ বোর্ড কোড দিয়ে সাইন ইন করুন",
   "No email or Google needed. Instead, we'll give you a":"ইমেইল বা Google লাগবে না। বদলে আপনি পাবেন একটি","Namaz Board code":"নামাজ বোর্ড কোড",": your own secret key for signing in.":": সাইন ইন করার জন্য আপনার নিজের গোপন চাবি।",
   "⚠️ Your account is saved on":"⚠️ আপনার অ্যাকাউন্ট সেভ থাকবে","this device":"এই ডিভাইসে",
   ". If you change phones or clear your browser, you'll need your Namaz Board code to get back in. Lose the code, and your streak can't be recovered.":"। ফোন বদলালে বা ব্রাউজার মুছলে আবার ঢুকতে ব্যাকআপ কোড লাগবে। কোড হারালে স্ট্রিক আর ফেরত পাওয়া যাবে না।",
@@ -142,6 +142,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^Namaz Board is invite only\. Send a request and (.+) will approve it\.$/, (_,n) => `নামাজ বোর্ডে শুধু আমন্ত্রণে যোগ দেওয়া যায়। অনুরোধ পাঠান, ${n} অনুমোদন দেবেন।`],
+  [/^(.+) has been asked to let$/, (_,n) => `${n}-কে অনুরোধ করা হয়েছে`],
   [/^Signed in as 🔑 no email \(signs in with a code\)$/, () => "সাইন ইন: 🔑 ইমেইল ছাড়া (কোড দিয়ে)"],
   [/^🧭 Your phone is on a different time zone from$/, () => "🧭 আপনার ফোনের টাইম জোন আলাদা:"],
   [/^, so these are$/, () => "। এগুলো"],

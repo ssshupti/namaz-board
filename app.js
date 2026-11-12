@@ -1225,7 +1225,7 @@ function viewNotInvited(){
   if (S.myRequest) return fresh + `<section class="panel hero-login"><h3>Request sent 💌</h3>
     <p>${owner} has been asked to let <b>${esc(S.myRequest.name)}</b> in. This page opens the board by itself once you're approved, so you can close it and come back later.</p>
     <div class="waiting" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="btns"><button class="ghost" data-act="cancelreq">Cancel request</button><button class="ghost" data-act="signout">Use another account</button></div>
+    <div class="btns"><button class="ghost" data-act="cancelreq">Cancel request</button><button class="ghost" data-act="signout">← Back to sign in</button></div>
     <p class="note">Signed in as ${esc(emailLabel(S.email))}</p></section>` + inviteBanner();
   const meta = S.session?.user?.user_metadata || {};
   const guess = meta.given_name || (meta.full_name||"").split(" ")[0] || "";
@@ -1233,7 +1233,7 @@ function viewNotInvited(){
     <p>Namaz Board is invite only. Send a request and ${owner} will approve it.</p>
     <label class="f">Your name<input id="r-name" maxlength="40" required value="${esc(guess)}"></label>
     <label class="f">Message (optional)<input id="r-note" maxlength="200" placeholder="Salaam! It's Raisa from uni"></label>
-    <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">Use another account</button></div>
+    <div class="btns"><button class="primary" type="submit">Ask to join</button><button class="ghost" type="button" data-act="signout">← Back to sign in</button></div>
     <p class="note">Signed in as ${esc(emailLabel(S.email))}</p></form>`;
 }
 
