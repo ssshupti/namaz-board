@@ -397,3 +397,8 @@ a.ghost{text-decoration:none;color:var(--ink);display:inline-flex;align-items:ce
 .qleft{font-size:13px;font-weight:800;color:var(--warn);text-align:right}
 .qrow .ghost{grid-column:1/-1;justify-self:start;padding:6px 14px}
 .qrow .ghost:disabled{opacity:.35}
+.langpick{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--surface);border:2px solid var(--line);margin:4px 0 10px}
+.langpick button{border:0;background:none;color:var(--ink);font:inherit;font-weight:800;padding:7px 16px;border-radius:999px;cursor:pointer}
+.langpick button.on{background:var(--accent);color:var(--accent-ink)}
+#main > .langpick{display:flex;width:max-content;margin:0 auto 12px}
+html[lang="bn"] .bn{display:none}

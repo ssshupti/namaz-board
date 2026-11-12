@@ -105,7 +105,7 @@ const FARDH = [
 const WINDOW_MS = 10 * 60e3;      // cron can run late; send if we're within 10 min of the moment
 const END_LEAD_MS = 30 * 60e3;    // streak-saver goes 30 min before the waqt ends
 
-type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null };
+type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null; lang?: string | null };
 type Times = Record<string, Date>;
 
 const ymd = (d: Date, tz: string) =>
@@ -113,6 +113,9 @@ const ymd = (d: Date, tz: string) =>
 const addDays = (ds: string, n: number) => { const t = new Date(ds + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
 const fmtT = (d: Date, tz: string) =>
   new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }).format(d).replace(/\s/, " ");
+
+const BND = "০১২৩৪৫৬৭৮৯";
+const bnNum = (s: string) => s.replace(/\d/g, (d) => BND[+d]).replace(/\bam\b/i, "AM").replace(/\bpm\b/i, "PM");
 
 export function cfgOf(m: Partial<Member>) {
   const custom = m.city === "custom" && Number.isFinite(m.lat) && Number.isFinite(m.lng) && !!m.tz;
@@ -141,12 +144,14 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: string) => boolean, excused: (day: string) => boolean = () => false) {
   const cfg = cfgOf(m), tz = loc(cfg).tz;
   const out: { day: string; waqt: string; kind: "start" | "end" | "jumuah"; title: string; body: string }[] = [];
-  const local = ymd(now, tz);
+  const local = ymd(now, tz), bn = m.lang === "bn";
   // Jumu'ah (opt-in): Fridays, 1 hour before Dhuhr.
   if (m.notify_jumuah && new Date(local + "T12:00:00Z").getUTCDay() === 5 && !excused(local)) {
     const dz = times(cfg, local).dhuhr, at = new Date(+dz - 60 * 60e3);
     if (now >= at && +now - +at < WINDOW_MS)
-      out.push({ day: local, waqt: "jumuah", kind: "jumuah", title: "🕌 Jumu'ah Mubarak", body: `Dhuhr / Jumu'ah at ${fmtT(dz, tz)}. Head out early, and read Surah Al-Kahf today 🌸` });
+      out.push({ day: local, waqt: "jumuah", kind: "jumuah", ...(bn
+        ? { title: "🕌 জুমা মুবারক", body: `যোহর / জুমা ${bnNum(fmtT(dz, tz))}-এ। একটু আগে বের হোন, আর আজ সূরা কাহফ পড়ুন 🌸` }
+        : { title: "🕌 Jumu'ah Mubarak", body: `Dhuhr / Jumu'ah at ${fmtT(dz, tz)}. Head out early, and read Surah Al-Kahf today 🌸` }) });
   }
   for (const day of [addDays(local, -1), local]) {
     if (excused(day)) continue; // excused days get no alerts
@@ -154,8 +159,9 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
     for (const p of FARDH) {
       const start = t[p.k], end = p.end ? t[p.end] : next.fajr;
       if (m.notify_start && now >= start && +now - +start < WINDOW_MS) {
-        out.push({ day, waqt: p.k, kind: "start", title: `🌸 It's ${p.en} time · ${p.bn}`,
-          body: `${p.en} ends at ${fmtT(end, tz)}. Pray, then tap to log it.` });
+        out.push({ day, waqt: p.k, kind: "start", ...(bn
+          ? { title: `🌸 ${p.bn}-এর সময় হয়েছে`, body: `${p.bn} শেষ হবে ${bnNum(fmtT(end, tz))}-এ। নামাজ পড়ে লগ করতে চাপুন।` }
+          : { title: `🌸 It's ${p.en} time · ${p.bn}`, body: `${p.en} ends at ${fmtT(end, tz)}. Pray, then tap to log it.` }) });
       }
       // Isha's waqt runs to Fajr, but delaying it past the middle of the night is disliked, and a 4am ping wakes people.
       // So Isha's reminder goes 30 min before the Islamic midnight (halfway from Maghrib to Fajr) instead.
@@ -164,7 +170,13 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
         : p.k === "asr" ? new Date(+end - 15 * 60e3) : end;
       const remind = new Date(+target - END_LEAD_MS);
       if (m.notify_end && now >= remind && +now - +remind < WINDOW_MS && now < target && !logged(day, p.k)) {
-        out.push(p.k === "isha"
+        const mins = Math.max(1, Math.round((+end - +now) / 60e3)), at = fmtT(target, tz);
+        out.push(bn ? (p.k === "isha"
+          ? { day, waqt: p.k, kind: "end", title: "🌙 এশা এখনো পড়েননি?", body: `ফজর পর্যন্ত এশার সময় আছে। পারলে ${bnNum(at)}-এর আগে পড়ে নেওয়া উত্তম 🌸` }
+          : p.k === "asr"
+          ? { day, waqt: p.k, kind: "end", title: `⏳ ${bnNum(at)}-এর আগে আসর পড়ুন`, body: "এরপর সূর্য ডোবার সময় (মাকরুহ)। স্ট্রিক হারাবেন না 🔥" }
+          : { day, waqt: p.k, kind: "end", title: `⏳ ${p.bn} শেষ হতে ${bnNum(String(mins))} মিনিট বাকি`, body: `${p.bn} এখনো লগ করেননি। স্ট্রিক হারাবেন না 🔥` })
+          : p.k === "isha"
           ? { day, waqt: p.k, kind: "end", title: "🌙 Haven't prayed Isha yet?", body: `Isha is still on until Fajr. It's best to pray it before ${fmtT(target, tz)} if you can 🌸` }
           : p.k === "asr"
           ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Asr before ${fmtT(target, tz)}`, body: "After that the sun is setting (makruh). Don't lose your streak 🔥" }

@@ -314,7 +314,7 @@ function grade(pct){
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
   return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
-    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, quietStart:r.quiet_start, quietEnd:r.quiet_end, joined:r.joined, days: prev?.days || {}};
+    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
   if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
@@ -758,6 +758,7 @@ function viewSettings(){
     <div class="btns"><button class="primary" type="submit">${isNew?"Join":"Save"}</button>${isNew?"":`<button class="ghost" type="button" data-act="tab" data-tab="today">Cancel</button>`}</div>
   </form>
   ${S.admin && !S.requests.length ? adminPanel() : S.admin ? adminPanel().replace(/^[\s\S]*?(<section class="panel" id="manage">)/,"$1") : ""}
+  <div class="panel"><h3>Language</h3>${langPicker()}<p class="note">Alerts on your phone follow this too.</p></div>
   <div class="panel"><div class="btns"><button class="ghost" type="button" data-act="tour">✨ How Namaz Board works</button><a class="ghost" href="privacy.html" target="_blank" rel="noopener">Privacy</a></div><p class="note">Signed in as ${esc(S.email)}</p><div class="btns"><button class="ghost" type="button" data-act="signout">Sign out</button>${meDoc() ? `<button class="ghost danger ${S.confirmDelMe?"sure":""}" type="button" data-act="deleteme">${S.confirmDelMe?"Tap again: delete everything":"Delete my account"}</button>` : ""}</div></div>${watermark()}`;
 }
 function requestsNudge(){
@@ -860,8 +861,12 @@ function viewAlerts(){
 }
 
 /* ---------- auth screens ---------- */
+const LANG = (() => { try { return localStorage.getItem("nb-lang") === "bn" ? "bn" : "en"; } catch { return "en"; } })();
+function langPicker(){
+  return `<div class="langpick" data-notr role="group" aria-label="Language"><button type="button" class="${LANG==="en"?"on":""}" data-act="lang" data-lang="en">English</button><button type="button" class="${LANG==="bn"?"on":""}" data-act="lang" data-lang="bn">বাংলা</button></div>`;
+}
 function viewLogin(){
-  return `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
+  return langPicker() + `<section class="panel hero-login"><h3>Pray together, streak together 🔥</h3>
     <p>Log your five daily namaz, keep your streak alive, and see how your friends are doing.</p>
     <button class="gbtn" data-act="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
     <p class="note">New here? Sign in and tap <b>Ask to join</b>. ${esc(CONF.ownerName||"The board owner")} will approve you.</p></section>` + watermark();
@@ -1007,6 +1012,12 @@ document.addEventListener("click", async e => {
   else if (a==="tour"){ S.tour = 0; renderTour(); }
   else if (a==="tournext"){ S.tour++; renderTour(); }
   else if (a==="tourdone"){ S.tour = null; renderTour(); try { localStorage.setItem("nb-tour-v1","1"); } catch {} if (b.dataset.then){ S.view = b.dataset.then; render(); scrollTo({top:0}); } }
+  else if (a==="lang"){
+    const v = b.dataset.lang; if (v === LANG) return;
+    try { localStorage.setItem("nb-lang", v); } catch {}
+    if (meDoc()) { try { await S.sb.from("members").update({lang:v}).eq("id", S.myId); } catch {} }
+    location.reload();
+  }
   else if (a==="hidenudge"){ try { localStorage.setItem("nb-nudge-hide","1"); } catch {} render(); }
   else if (a==="openfr"){ if (b.dataset.id===S.myId) S.view = "me"; else { S.view = "board"; const g = S.groups.find(x => groupIds(x.id).includes(b.dataset.id)); if (g) S.gid = g.id; S.open = b.dataset.id; } render(); scrollTo({top:0}); }
   else if (a==="vis"){
@@ -1222,6 +1233,12 @@ async function boot(){
   if (qg){ try { localStorage.setItem("nb-join", qg.toUpperCase()); } catch {} }
   if (qv || qg){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; }
   await afterAuth();
+  if (meDoc()){
+    let saved = null; try { saved = localStorage.getItem("nb-lang"); } catch {}
+    const theirs = meDoc().lang;
+    if (!saved && theirs === "bn"){ try { localStorage.setItem("nb-lang","bn"); } catch {} location.reload(); return; }
+    if (saved && theirs && theirs !== saved) S.sb.from("members").update({lang:saved}).eq("id", S.myId).then(()=>{}, ()=>{});
+  }
   if (S.pendingView && S.admin && S.phase==="app"){ S.view = S.pendingView; S.forceForm = true; render(); }
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState==="visible" && S.phase==="app"){ try { await syncChanges(); render(); } catch {} }
