@@ -91,10 +91,10 @@ const P = [
   {k:"dhuhr",en:"Dhuhr",bn:"যোহর",f:4,chips:[["s","Sunnah","4+2"],["n","Nafl","2"]]},
   {k:"asr",en:"Asr",bn:"আসর",f:4,chips:[["s","Sunnah","4"]]},
   {k:"maghrib",en:"Maghrib",bn:"মাগরিব",f:3,chips:[["s","Sunnah","2"],["n","Nafl","2"]]},
-  {k:"isha",en:"Isha",bn:"এশা",f:4,chips:[["s","Sunnah","4+2"],["w","Witr","3"],["n","Nafl","2"]]}
+  {k:"isha",en:"Isha",bn:"এশা",f:4,chips:[["b","Sunnah","4"],["s","Sunnah","2"],["w","Witr","3"],["n","Nafl","2"]]}
 ];
 const X = {k:"x",en:"Tahajjud & extra",bn:"তাহাজ্জুদ",chips:[["t","Tahajjud"],["i","Ishraq"],["d","Duha"],["a","Awwabin"]]};
-const PTS = {f:10,s:3,w:3,n:2,t:5,i:2,d:2,a:2};
+const PTS = {f:10,s:3,b:2,w:3,n:2,t:5,i:2,d:2,a:2};
 const H = 3600e3, DAY = 24*H, HISTORY_DAYS = 130;
 
 const S = {nudges:[],nudgeTo:null,sb:null,session:null,myId:null,email:"",invited:false,admin:false,invites:[],requests:[],myRequest:null,lastSync:null,
@@ -758,7 +758,7 @@ function gradesheet(id){
   for (let d=start; d<=today; d=addDays(d,1)){
     const t = times(cfg,d);
     const ex = id===S.myId && S.excused.has(d);
-    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || (!ex && !preJoin(m,d,t[o.p.k]))) o.due++; if (f) o.done++; if (c.includes("s")) o.s++; } });
+    per.forEach(o => { if (t[o.p.k] <= now){ const c=codeOf(id,d,o.p.k), f=c.includes("f"); if (f || (!ex && !preJoin(m,d,t[o.p.k]))) o.due++; if (f) o.done++; if (c.includes("s") || c.includes("b")) o.s++; } });
     nights++; if (codeOf(id,d,"x").includes("t")) tah++;
   }
   const month = new Date(today+"T12:00:00Z").toLocaleDateString("en-GB",{month:"long",timeZone:"UTC"});

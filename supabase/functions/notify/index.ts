@@ -189,7 +189,7 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
 
 /* ---------- shared stats (streaks/grades friends can see; excused days stay private) ---------- */
 const DAY_MS = 24 * 3600e3;
-const PTS: Record<string, number> = { f: 10, s: 3, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
+const PTS: Record<string, number> = { f: 10, s: 3, b: 2, w: 3, n: 2, t: 5, i: 2, d: 2, a: 2 };
 type StatMember = { id: string; city: string; method: string; madhab: string; joined: string; created_at?: string; lat?: number | null; lng?: number | null; tz?: string | null };
 function appDay(cfg: ReturnType<typeof cfgOf>, now: Date) {
   const tz = loc(cfg).tz, d = ymd(now, tz);
