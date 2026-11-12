@@ -159,7 +159,7 @@ export function dueEvents(m: Member, now: Date, logged: (day: string, waqt: stri
       const remind = new Date(+target - END_LEAD_MS);
       if (m.notify_end && now >= remind && +now - +remind < WINDOW_MS && now < target && !logged(day, p.k)) {
         out.push(p.k === "isha"
-          ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Isha before ${fmtT(target, tz)}`, body: "It's best not to delay Isha past midnight. Keep your streak going 🔥" }
+          ? { day, waqt: p.k, kind: "end", title: "🌙 Haven't prayed Isha yet?", body: `Isha is still on until Fajr. It's best to pray it before ${fmtT(target, tz)} if you can 🌸` }
           : p.k === "asr"
           ? { day, waqt: p.k, kind: "end", title: `⏳ Pray Asr before ${fmtT(target, tz)}`, body: "After that the sun is setting (makruh). Don't lose your streak 🔥" }
           : { day, waqt: p.k, kind: "end", title: `⏳ ${p.en} ends in ${Math.max(1, Math.round((+end - +now) / 60e3))} min`, body: `You haven't logged ${p.en} yet. Don't lose your streak 🔥` });
