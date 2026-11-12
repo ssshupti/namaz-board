@@ -1296,7 +1296,7 @@ function inAppBanner(){
   const android = /Android/i.test(navigator.userAgent);
   let code = ""; try { code = localStorage.getItem("nb-join") || ""; } catch {}   // keep the group invite when moving to Chrome
   const chromeUrl = `intent://${location.host}${location.pathname}${code ? "?g="+encodeURIComponent(code) : ""}#Intent;scheme=https;package=com.android.chrome;end`;
-  return `<div class="notice inapp"><span>⚠️ <b>You're inside another app's browser.</b> Google sign-in, installing and alerts won't work here. ${android ? "Open it in Chrome instead." : "Tap <b>•••</b> or the share icon, then <b>Open in Safari</b>."}</span>
+  return `<div class="notice inapp"><span>⚠️ <b>You're inside another app's browser.</b> Google sign-in, installing and alerts won't work here. ${android ? "Tap the button below, or <b>⋮</b> (top right) → <b>Open in Chrome</b>." : "Tap <b>•••</b> (top right) → <b>Open in external browser</b> (or <b>Open in Safari</b>)."}</span>
     ${android ? `<div class="btns"><a class="primary btnlink" href="${esc(chromeUrl)}">Open in Chrome</a></div>` : ""}</div>`;
 }
 /* ---------- accounts without email ---------- */
@@ -1824,7 +1824,7 @@ async function boot(){
   if (qg){ try { localStorage.setItem("nb-join", qg.toUpperCase()); } catch {} }
   { let c = null; try { c = localStorage.getItem("nb-join"); } catch {}
     if (c) S.sb.rpc("group_preview",{join_code:c}).then(({data}) => { if (data?.[0]){ S.linkGroup = data[0]; if (S.phase!=="app") render(); } }, () => {}); }
-  if (qv || qg){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; if (qv==="board"){ S.view = "board"; if (qs.get("gid")) S.gid = qs.get("gid"); } if (qv==="recap") S.openRecap = true; }
+  if ((qv || qg) && !(IN_APP && qg)){ history.replaceState(null,"",location.pathname); if (qv==="requests") S.pendingView = "settings"; if (qv==="board"){ S.view = "board"; if (qs.get("gid")) S.gid = qs.get("gid"); } if (qv==="recap") S.openRecap = true; }
   await afterAuth();
   if (meDoc()){
     let saved = null; try { saved = localStorage.getItem("nb-lang"); } catch {}
