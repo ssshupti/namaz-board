@@ -932,7 +932,7 @@ function previewHtml(){
   if (!pv) return "";
   if (pv.loading) return `<p class="note">Looking up the group…</p>`;
   if (!pv.name) return `<p class="note">No group has that code. Check it with your friend.</p>`;
-  return `<div class="gprev"><span class="gpi">👥</span><div><b data-notr>${esc(pv.name)}</b><small>${pv.members} member${pv.members===1?"":"s"} · 🔥 Streaks & rings</small></div></div>`;
+  return `<div class="gprev"><span class="gpi">👥</span><div><b data-notr>${esc(pv.name)}</b><small>🔥 Streaks & rings</small></div></div>`;
 }
 async function lookupGroup(code){
   code = String(code||"").trim().toUpperCase();
