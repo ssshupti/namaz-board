@@ -478,7 +478,7 @@ function grade(pct){
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
   return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
-    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, notifyRecap:r.notify_recap !== false, flame:r.flame || null, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
+    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, notifyRecap:r.notify_recap !== false, notifyAyah:!!r.notify_ayah, flame:r.flame || null, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
   if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
@@ -841,7 +841,7 @@ function viewToday(){
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
-  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + gameCard() + groupsNudge() + alertsNudge() + friendsStrip();
+  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + todayCard() + gameCard() + groupsNudge() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
@@ -1031,7 +1031,48 @@ function viewMe(){
   const s7 = memberSummary(S.myId,"7"), sm = memberSummary(S.myId,"month"), best = bestStreak(S.myId);
   return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${esc(loc(cfgOf(m)).name)} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
     <div class="tiles num"><div class="tile"><b>${s7.pct==null?"–":Math.round(s7.pct)+"%"}</b><span>Fardh, 7 days</span></div><div class="tile"><b>${best}</b><span>Best streak</span></div><div class="tile"><b>${sm.pts}</b><span>Points this month</span></div></div>
-    ${gradesheet(S.myId)}</div>` + weekCard() + flamePicker(best) + badgeShelf(best) + qazaPanel();
+    ${gradesheet(S.myId)}</div>` + weekCard() + cardAlbum() + flamePicker(best) + badgeShelf(best) + qazaPanel();
+}
+
+/* ---------- reward cards: one opens each day you pray all 5 ---------- */
+const CARDS = window.NB_CARDS || [];
+function cardOrder(){   // a fixed shuffle per person, so friends collect in different orders
+  let x = (hue(S.myId) + 7) * 2654435761 % 4294967296; const rnd = () => (x = (x * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const a = CARDS.map((_,i) => i); for (let i = a.length-1; i > 0; i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a;
+}
+function fullDays(){
+  const m = meDoc(); if (!m?.joined) return [];
+  const today = appDay(cfgOf(m)), out = [];
+  for (let d = m.joined, i = 0; d <= today && i < 4000; d = addDays(d,1), i++) if (P.every(p => codeOf(S.myId,d,p.k).includes("f"))) out.push(d);
+  return out;
+}
+function cardHtml(c, big){
+  return `<div class="rcard ${c.t} ${big?"big":""}"><div class="rc-art">${c.art}</div><div class="rc-kind">${c.t==="ayah" ? "📖 Qur'an" : "🌿 Hadith"}</div>
+    <p class="rc-text" data-notr>“${esc(c.text)}”</p><p class="rc-ref" data-notr>${esc(c.ref)}</p></div>`;
+}
+function todayCard(){
+  const m = meDoc(); if (!m || S.dayOff || !CARDS.length) return "";
+  const today = appDay(cfgOf(m)), days = fullDays();
+  if (days[days.length-1] !== today) return "";
+  const c = CARDS[cardOrder()[(days.length-1) % CARDS.length]];
+  if (lsGet("nb-card-open") !== today) return `<section class="panel rgift"><button class="giftbtn" data-act="opencard"><span class="gb-box">🎁</span><b>Today's card is ready</b><small>You prayed all 5. Tap to open it ✨</small></button></section>`;
+  return `<section class="panel rtoday"><div class="sechead"><h3>🎁 Today's card</h3><p>Saved in My cards</p></div>${cardHtml(c, true)}</section>`;
+}
+function cardAlbum(){
+  if (!CARDS.length) return "";
+  const n = fullDays().length, order = cardOrder(), got = Math.min(n, CARDS.length);
+  const show = Math.min(CARDS.length, Math.ceil((got + 1) / 5) * 5);   // collected cards plus the rest of the row
+  const tiles = order.slice(0, show).map((ci, k) => k < got
+    ? `<button class="atile" data-act="showcard" data-i="${ci}"><span>${CARDS[ci].art}</span><small>${CARDS[ci].t==="ayah"?"Qur'an":"Hadith"}</small></button>`
+    : `<div class="atile locked"><span>🔒</span></div>`).join("");
+  return `<section class="panel album"><div class="sechead"><h3>📖 My cards</h3><p class="num">${got}/${CARDS.length}</p></div>
+    <p class="note">A new card opens each day you pray all 5 fardh.${n > CARDS.length ? " You've collected them all, MashaAllah! Cards now repeat." : ""}</p>
+    <div class="agrid">${tiles}</div>${CARDS.length > show ? `<p class="note" style="text-align:center;margin:8px 0 0">🔒 ${CARDS.length - show} more to discover</p>` : ""}</section>`;
+}
+function showCard(i){
+  const c = CARDS[i]; if (!c) return;
+  let el = $("cardDlg"); if (!el){ el = document.createElement("div"); el.id = "cardDlg"; el.className = "tour"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); document.body.appendChild(el); }
+  el.innerHTML = `<div class="tcard cardview">${cardHtml(c, true)}<div class="btns"><button class="primary" data-act="cardclose">Close</button></div></div>`;
 }
 
 /* ---------- Star Catch: unlocked once a day after all 5 fardh ---------- */
@@ -1347,6 +1388,7 @@ function viewAlerts(){
     <section class="panel"><h3>What to send me</h3>
       <label class="tog"><input type="checkbox" id="n-start" data-act="ntoggle" ${m.notifyStart!==false?"checked":""}><span><b>When each waqt starts</b><br><small>“🌸 It's Asr time · ends 5:14 pm”</small></span></label>
       <label class="tog"><input type="checkbox" id="n-end" data-act="ntoggle" ${m.notifyEnd!==false?"checked":""}><span><b>Streak saver</b><br><small>30 min before a waqt ends, only if you haven't logged its fardh</small></span></label>
+      <label class="tog"><input type="checkbox" id="n-ayah" data-act="ntoggle" ${m.notifyAyah?"checked":""}><span><b>Ayah of the day</b><br><small>A short ayah with its meaning, 20 minutes after Fajr</small></span></label>
       <label class="tog"><input type="checkbox" id="n-recap" data-act="ntoggle" ${m.notifyRecap!==false?"checked":""}><span><b>Weekly recap</b><br><small>Sunday at 8 pm: your week's fardh and streak, with a card you can save</small></span></label>
       <label class="tog"><input type="checkbox" id="n-jumuah" data-act="ntoggle" ${m.notifyJumuah?"checked":""}><span><b>Jumu'ah reminder</b><br><small>On Fridays, 1 hour before Dhuhr, with a nudge to read Surah Al-Kahf</small></span></label>
       <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>
@@ -1533,6 +1575,9 @@ document.addEventListener("click", async e => {
     if (isCodeEmail(S.email) && !b.dataset.sure){ leaveDialog(); return; }
     await S.sb.auth.signOut(); location.reload();
   }
+  else if (a==="opencard"){ lsSet("nb-card-open", appDay(cfgOf(meDoc()))); render(); requestAnimationFrame(() => document.querySelector(".rtoday .rcard")?.classList.add("flip")); }
+  else if (a==="showcard"){ showCard(+b.dataset.i); }
+  else if (a==="cardclose"){ $("cardDlg")?.remove(); }
   else if (a==="play"){ b.disabled = true; await playGame(); b.disabled = false; }
   else if (a==="skin"){ await setSkin(b.dataset.k); toast("New look on 🔥"); }
   else if (a==="recap"){ b.disabled = true; await openRecap(); b.disabled = false; }
@@ -1751,7 +1796,7 @@ document.addEventListener("click", async e => {
         setTimeout(() => toast(`🔥 New flame unlocked: ${sk.n}. Wear it from the Me tab!`), ms ? 4500 : 2500);
       }
       if (ms){ setTimeout(celebrate, 700); showMilestone(ms); }
-      else toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done. Star Catch unlocked 🎮` : "All 5 fardh done for the day. Star Catch unlocked 🎮");
+      else toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done. Your card and Star Catch are unlocked 🎁` : "All 5 fardh done. Your card and Star Catch are unlocked 🎁");
     }
   }
 });
@@ -1772,12 +1817,12 @@ document.addEventListener("change", async e => {
 document.addEventListener("change", async e => {
   if (e.target.dataset.act !== "ntoggle") return;
   const on = $("q-on")?.checked;
-  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked, notify_jumuah:$("n-jumuah").checked, notify_recap:$("n-recap")?.checked !== false,
+  const patch = {notify_start:$("n-start").checked, notify_end:$("n-end").checked, notify_jumuah:$("n-jumuah").checked, notify_recap:$("n-recap")?.checked !== false, notify_ayah:!!$("n-ayah")?.checked,
     quiet_start: on ? hm2mins($("q-from").value) : null, quiet_end: on ? hm2mins($("q-to").value) : null};
   let {error} = await S.sb.from("members").update(patch).eq("id", S.myId);
-  if (error && /notify_recap/.test(error.message||"")){ const {notify_recap:_, ...rest} = patch; ({error} = await S.sb.from("members").update(rest).eq("id", S.myId)); }
+  if (error && /notify_recap|notify_ayah/.test(error.message||"")){ const {notify_recap:_, notify_ayah:__, ...rest} = patch; ({error} = await S.sb.from("members").update(rest).eq("id", S.myId)); }
   if (error) toast(/column/i.test(error.message||"") ? "This setting needs the latest database update." : "Couldn't save that setting.");
-  else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end, notifyJumuah:patch.notify_jumuah, quietStart:patch.quiet_start, quietEnd:patch.quiet_end, notifyRecap:patch.notify_recap}); toast("Saved"); }
+  else { Object.assign(meDoc(), {notifyStart:patch.notify_start, notifyEnd:patch.notify_end, notifyJumuah:patch.notify_jumuah, quietStart:patch.quiet_start, quietEnd:patch.quiet_end, notifyRecap:patch.notify_recap, notifyAyah:patch.notify_ayah}); toast("Saved"); }
 });
 document.addEventListener("submit", async e => {
   e.preventDefault();

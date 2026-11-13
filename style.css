@@ -534,3 +534,26 @@ html[lang="bn"] .bn{display:none}
 .gcard .gfinal{color:#4A3A5E;font-size:20px}
 .gcard .gfinal b{font-family:var(--display);font-size:30px;color:#E0336F}
 .gcard .gfinal span{color:#2EAF86}
+/* reward cards */
+.giftbtn{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;color:var(--ink);font:inherit;cursor:pointer;padding:6px}
+.giftbtn .gb-box{font-size:48px;animation:giftwob 1.8s ease-in-out infinite}
+.giftbtn b{font-family:var(--display);font-size:20px}
+.giftbtn small{color:var(--muted);font-weight:700}
+@keyframes giftwob{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg) scale(1.06)}40%{transform:rotate(7deg) scale(1.06)}60%{transform:rotate(0)}}
+.rgift{border:2px dashed var(--gold);background:linear-gradient(160deg,var(--surface),color-mix(in srgb,var(--gold) 14%,var(--surface)))}
+.rcard{border-radius:22px;padding:18px 16px;text-align:center;background:linear-gradient(165deg,#FFF6FA,#F1E9FF);color:#4A3A5E;border:2px solid #F3D9E6}
+.rcard.hadith{background:linear-gradient(165deg,#F4FFF9,#EAF3FF);border-color:#D4EEE2}
+.rcard .rc-art{font-size:40px;line-height:1}
+.rcard .rc-kind{font-size:12px;font-weight:800;color:#9A87AE;margin:6px 0 4px;letter-spacing:.04em}
+.rcard .rc-text{font-family:var(--display);font-size:18px;font-weight:700;line-height:1.4;margin:4px 0 8px}
+.rcard .rc-ref{font-size:12.5px;font-weight:800;color:#8E78A8;margin:0}
+.rcard.flip{animation:cardflip .7s cubic-bezier(.2,1.3,.4,1)}
+@keyframes cardflip{from{transform:perspective(800px) rotateY(90deg) scale(.9);opacity:.3}to{transform:none;opacity:1}}
+.agrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.atile{aspect-ratio:3/4;border-radius:12px;border:0;background:linear-gradient(165deg,#FFF0F6,#EFE6FF);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font:inherit;color:#4A3A5E}
+.atile span{font-size:22px}
+.atile small{font-size:9.5px;font-weight:800;color:#9A87AE}
+.atile.locked{background:var(--off);opacity:.6;cursor:default}
+.atile.locked span{font-size:14px}
+.cardview{padding:14px}
+.cardview .rcard{margin-bottom:12px}

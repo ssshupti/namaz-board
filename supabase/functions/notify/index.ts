@@ -250,7 +250,7 @@ const FARDH = [
 const WINDOW_MS = 10 * 60e3;      // cron can run late; send if we're within 10 min of the moment
 const END_LEAD_MS = 30 * 60e3;    // streak-saver goes 30 min before the waqt ends
 
-type Member = { id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null; lang?: string | null; notify_recap?: boolean | null; joined?: string | null; created_at?: string };
+type Member = { notify_ayah?: boolean | null; id: string; name: string; city: string; method: string; madhab: string; notify_start: boolean; notify_end: boolean; lat?: number | null; lng?: number | null; tz?: string | null; place?: string | null; notify_jumuah?: boolean; quiet_start?: number | null; quiet_end?: number | null; lang?: string | null; notify_recap?: boolean | null; joined?: string | null; created_at?: string };
 type Times = Record<string, Date>;
 
 const ymd = (d: Date, tz: string) =>
@@ -286,6 +286,39 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 }
 
 /** Which notifications are due right now for this member (pure; tested). */
+/* Ayah of the day (opt-in): 20 minutes after Fajr. Keep in sync with the ayah cards in cards.js. */
+export const AYAT: [string, string][] = [
+  ["Indeed, prayer keeps one away from immorality and wrongdoing.", "Qur'an 29:45 (Al-'Ankabut)"],
+  ["So remember Me; I will remember you.", "Qur'an 2:152 (Al-Baqarah)"],
+  ["Indeed, with hardship comes ease.", "Qur'an 94:6 (Ash-Sharh)"],
+  ["Seek help through patience and prayer.", "Qur'an 2:45 (Al-Baqarah)"],
+  ["Surely in the remembrance of Allah do hearts find rest.", "Qur'an 13:28 (Ar-Ra'd)"],
+  ["Guard your prayers carefully, especially the middle prayer, and stand before Allah in devotion.", "Qur'an 2:238 (Al-Baqarah)"],
+  ["Allah does not burden any soul beyond what it can bear.", "Qur'an 2:286 (Al-Baqarah)"],
+  ["And He is with you wherever you are.", "Qur'an 57:4 (Al-Hadid)"],
+  ["Call upon Me; I will respond to you.", "Qur'an 40:60 (Ghafir)"],
+  ["Successful indeed are the believers: those who are humble in their prayer.", "Qur'an 23:1–2 (Al-Mu'minun)"],
+  ["And establish prayer for My remembrance.", "Qur'an 20:14 (Ta-Ha)"],
+  ["Indeed, prayer has been prescribed for the believers at fixed times.", "Qur'an 4:103 (An-Nisa)"],
+  ["Do not despair of the mercy of Allah. Indeed, Allah forgives all sins.", "Qur'an 39:53 (Az-Zumar)"],
+  ["Whoever puts their trust in Allah, He is enough for them.", "Qur'an 65:3 (At-Talaq)"],
+  ["And your Lord is going to give you, and you will be pleased.", "Qur'an 93:5 (Ad-Duha)"],
+  ["Indeed, Allah is with the patient.", "Qur'an 2:153 (Al-Baqarah)"],
+  ["And We have certainly made the Qur'an easy to remember. So is there anyone who will remember?", "Qur'an 54:17 (Al-Qamar)"],
+  ["My mercy encompasses all things.", "Qur'an 7:156 (Al-A'raf)"],
+  ["When My servants ask you about Me: I am truly near. I answer the call of the caller when they call upon Me.", "Qur'an 2:186 (Al-Baqarah)"],
+  ["So be patient. Indeed, the promise of Allah is true.", "Qur'an 30:60 (Ar-Rum)"],
+];
+export function ayahDue(m: Member, now: Date) {
+  if (!m.notify_ayah) return null;
+  const cfg = cfgOf(m), day = appDay(cfg, now), at = new Date(+times(cfg, day).fajr + 20 * 60e3);
+  return now >= at && +now - +at < WINDOW_MS ? day : null;
+}
+export function ayahOfDay(day: string) {
+  const n = Math.floor(Date.parse(day + "T00:00:00Z") / 86400e3);
+  return AYAT[((n % AYAT.length) + AYAT.length) % AYAT.length];
+}
+
 /* Weekly recap: Sunday 8 pm local time. */
 export function recapDue(m: Member, now: Date) {
   if (m.notify_recap === false) return null;
@@ -609,6 +642,15 @@ Deno.serve(async (req) => {
       if (error || !claimed?.length) continue;
       sent += await send(m.id, ev.title, ev.body, `${ev.waqt}-${ev.kind}`);
     }
+  }
+  // Ayah of the day, for those who turned it on.
+  for (const m of (members ?? []) as Member[]) {
+    const day = ayahDue(m, now); if (!day || inQuiet(m, now)) continue;
+    const { data: claimed, error } = await db.from("notify_sent")
+      .upsert({ user_id: m.id, day, waqt: "fajr", kind: "ayah" }, { onConflict: "user_id,day,waqt,kind", ignoreDuplicates: true }).select();
+    if (error || !claimed?.length) continue;
+    const [text, ref] = ayahOfDay(day);
+    sent += await send(m.id, m.lang === "bn" ? "📖 আজকের আয়াত" : "📖 Ayah of the day", `“${text}” (${ref})`, "ayah-" + day);
   }
   // Sunday-evening weekly recap.
   for (const m of (members ?? []) as Member[]) {
