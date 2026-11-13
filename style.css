@@ -497,7 +497,9 @@ html[lang="bn"] .bn{display:none}
 .qzrow small{flex:1 1 180px}
 .chip.qz.on::before{content:none}
 .gchip.add.join{background:var(--rose);color:#fff;border-style:solid;border-color:var(--rose)}
-.gnudge{display:flex;gap:14px;align-items:flex-start;border:2px dashed color-mix(in srgb,var(--rose) 60%,transparent)}
-.gnudge .gn-emoji{font-size:36px;line-height:1}
-.gnudge h3{margin-bottom:4px}
-.gnudge p{margin:0 0 10px}
+.notice.gnudge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:0;padding:12px 14px}
+.notice.gnudge > span{flex:1 1 180px}
+.gdlist{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.gdrow{display:flex;align-items:center;gap:10px;background:var(--off);border-radius:14px;padding:9px 12px}
+.gdrow b{font-family:var(--display);font-size:16px}
+.gdrow small{color:var(--muted);font-weight:700;flex:1}

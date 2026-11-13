@@ -791,9 +791,7 @@ function sticker(n){
 /* Home: an easy way in for people who aren't in a group yet. */
 function groupsNudge(){
   if (!meDoc() || S.groups.length) return "";
-  return `<section class="panel gnudge"><div class="gn-emoji">👥</div><div><h3>Pray with your friends</h3>
-    <p>Got an invite link or a group code from a friend? Join their group to see each other's rings and streaks.</p>
-    <div class="btns"><button class="primary" data-act="tab" data-tab="board" data-then="gjoin">🔑 Join with a code</button><button class="ghost" data-act="tab" data-tab="board" data-then="gnew">＋ Start a group</button></div></div></section>`;
+  return `<div class="notice gnudge"><span>👥 <b>Not in a group yet?</b> Join your friends' group with their code.</span><button class="primary" data-act="tab" data-tab="board" data-then="gjoin">🔑 Join a group</button></div>`;
 }
 /* Home: you + public members. A group's rings show inside that group on the Board. */
 function friendsStrip(){
@@ -873,7 +871,7 @@ function viewBoard(){
   if (S.gform) return chips + groupForm();
   if (S.gid==="all") return chips + everyoneBoard();
   if (!g) return chips + `<div class="panel empty"><h3>Your namaz is private 🔒</h3><p>Nobody can see your log until you're in a group. Create one and share its link, or join a friend's group with their code.</p>
-    <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>`;
+    <div class="btns" style="justify-content:center"><button class="primary" data-act="gnew">Create a group</button><button class="ghost" data-act="gjoin">Join with code</button></div></div>` + groupDirectory();
   const ids = groupIds(g.id), isOwner = g.owner===S.myId;
   const link = `${location.origin}${location.pathname}?g=${g.code}`;
   let html = chips + `<section class="ghead"><div><h3 data-notr>${esc(g.name)}</h3><p>${ids.length} member${ids.length===1?"":"s"} · 🔥 Streaks & rings</p><button class="gcode" data-act="gcopy" data-link="${esc(link)}" data-code="${g.code}" title="Copy the code">Code <b data-notr>${g.code}</b> ⧉</button></div>
@@ -950,11 +948,23 @@ function refreshPreview(){
   el.innerHTML = previewHtml();
   btn.disabled = !S.preview?.name; btn.textContent = S.preview?.name ? `Join ${S.preview.name}` : "Join";
 }
+/* Names of every group on Namaz Board (joining still needs the code). */
+async function loadDirectory(){
+  const {data, error} = await S.sb.rpc("list_groups");
+  S.directory = error ? null : (data || []); scheduleRender();
+}
+function groupDirectory(){
+  if (S.directory === undefined){ S.directory = null; loadDirectory(); }
+  const list = S.directory; if (!list?.length) return "";
+  return `<section class="panel gdir"><h3>Groups on Namaz Board</h3>
+    <div class="gdlist">${list.map(g => `<div class="gdrow"><b data-notr>${esc(g.name)}</b><small>${g.members} member${g.members===1?"":"s"}</small>${g.mine ? `<span class="tag ok">You're in</span>` : `<span class="tag">Needs code</span>`}</div>`).join("")}</div>
+    <p class="note">Want to join one? Ask someone in it for the invite link or 6-letter code.</p></section>`;
+}
 function groupForm(){
   if (S.gform==="join") return `<form class="panel" id="gJoinForm"><h3>Join a group</h3><p>Ask a friend for their group's 6-letter code, or open the invite link they sent.</p>
     <label class="f">Group code<input id="g-code" maxlength="6" required autocomplete="off" placeholder="e.g. K7Q2ZP" value="${esc(S.joinCode||"")}" style="text-transform:uppercase;letter-spacing:.2em"></label>
     <div id="gPreview">${previewHtml()}</div>
-    <div class="btns"><button class="primary" type="submit" id="gJoinBtn" ${S.preview?.name?"":"disabled"}>${S.preview?.name ? `Join ${esc(S.preview.name)}` : "Join"}</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>`;
+    <div class="btns"><button class="primary" type="submit" id="gJoinBtn" ${S.preview?.name?"":"disabled"}>${S.preview?.name ? `Join ${esc(S.preview.name)}` : "Join"}</button><button class="ghost" type="button" data-act="gcancel">Cancel</button></div></form>` + groupDirectory();
   return `<form class="panel" id="gNewForm"><h3>New group 🌸</h3>
     <label class="f">Name<input id="g-name" maxlength="30" required placeholder="Uni friends, Family, Cousins…"></label>
     <p class="note">Everyone in the group sees each other's 🔥 streak and today's fardh rings.</p>
@@ -1460,7 +1470,7 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act],[data-tab]"); if (!b || b.disabled) return;
   const a = b.dataset.act;
   if (a==="ntoggle") return; // handled on change
-  if (!a || a==="tab"){ S.view = b.dataset.tab; if (b.dataset.then){ S.gform = b.dataset.then==="gjoin" ? "join" : "new"; S.joinCode = ""; S.preview = null; } render(); scrollTo({top:0}); return; }
+  if (!a || a==="tab"){ S.view = b.dataset.tab; if (b.dataset.then){ S.gform = b.dataset.then==="gjoin" ? "join" : "new"; S.joinCode = ""; S.preview = null; S.directory = undefined; } render(); scrollTo({top:0}); return; }
   if (a==="google"){
     const {error} = await S.sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin + location.pathname, queryParams:{prompt:"select_account"}}});
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
@@ -1606,7 +1616,7 @@ document.addEventListener("click", async e => {
   }
   else if (a==="gpick"){ S.inviteOpen = false; S.gid = b.dataset.id; S.gform = null; S.gmanage = false; S.open = null; render(); }
   else if (a==="gnew"){ S.gform = "new"; render(); }
-  else if (a==="gjoin"){ S.gform = "join"; S.joinCode = ""; S.preview = null; render(); }
+  else if (a==="gjoin"){ S.directory = undefined; S.gform = "join"; S.joinCode = ""; S.preview = null; render(); }
   else if (a==="gcancel"){ S.gform = null; render(); }
   else if (a==="gmanage"){ S.gmanage = !S.gmanage; render(); }
   else if (a==="ginvitemenu"){ S.inviteOpen = !S.inviteOpen; render(); }
