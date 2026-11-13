@@ -248,10 +248,22 @@ const S = {nudges:[],nudgeTo:null,sb:null,session:null,myId:null,email:"",invite
   phase:"boot",err:"",pop:"",confirmRm:null};
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const flameSvg = (lit) => lit
-  ? `<svg viewBox="0 0 64 76" aria-hidden="true"><use href="#flm" fill="url(#gF)"/><ellipse cx="25" cy="47" rx="3" ry="3.6" fill="#5A2440"/><ellipse cx="39" cy="47" rx="3" ry="3.6" fill="#5A2440"/><circle cx="26" cy="45.8" r="1" fill="#fff"/><circle cx="40" cy="45.8" r="1" fill="#fff"/><path d="M28.5 53q3.5 3.5 7 0" stroke="#5A2440" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="19" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/><circle cx="45" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/></svg>`
+/* Flame looks, unlocked by your best streak. */
+const SKINS = [
+  {k:"classic", n:"Classic", need:0},
+  {k:"rose", n:"Rose 🌸", need:7},
+  {k:"gold", n:"Gold ✨", need:14},
+  {k:"moon", n:"Moonlight 🌙", need:30},
+  {k:"emerald", n:"Emerald 💚", need:40},
+  {k:"nur", n:"Nur 🌈", need:100}];
+const skinOf = id => { let k = S.members[id]?.flame;
+  if (!k && id===S.myId){ try { k = localStorage.getItem("nb-flame"); } catch {} }
+  return SKINS.some(x => x.k===k) ? k : "classic"; };
+const gradOf = skin => skin && skin!=="classic" ? `url(#gF-${skin})` : "url(#gF)";
+const flameSvg = (lit, skin) => lit
+  ? `<svg viewBox="0 0 64 76" aria-hidden="true" class="skin-${skin||"classic"}"><use href="#flm" fill="${gradOf(skin)}"/><ellipse cx="25" cy="47" rx="3" ry="3.6" fill="#5A2440"/><ellipse cx="39" cy="47" rx="3" ry="3.6" fill="#5A2440"/><circle cx="26" cy="45.8" r="1" fill="#fff"/><circle cx="40" cy="45.8" r="1" fill="#fff"/><path d="M28.5 53q3.5 3.5 7 0" stroke="#5A2440" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="19" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/><circle cx="45" cy="53" r="3.6" fill="#FF7AA2" opacity=".55"/></svg>`
   : `<svg viewBox="0 0 64 76" aria-hidden="true"><use href="#flm" fill="var(--off)" stroke="var(--line)" stroke-width="2.5"/><path d="M21 48q4 3 8 0M35 48q4 3 8 0" stroke="var(--muted)" stroke-width="2.2" fill="none" stroke-linecap="round"/><text x="44" y="30" font-size="10" font-weight="800" fill="var(--muted)" font-family="sans-serif">z</text></svg>`;
-const miniFlame = (n, lit=true) => `<span class="mini ${lit&&n?"":"off"}"><svg viewBox="0 0 64 76"><use href="#flm" fill="${lit&&n?"url(#gF)":"var(--line)"}"/></svg>${n}</span>`;
+const miniFlame = (n, lit=true, skin) => `<span class="mini ${lit&&n?"":"off"}"><svg viewBox="0 0 64 76" class="skin-${skin||"classic"}"><use href="#flm" fill="${lit&&n?gradOf(skin):"var(--line)"}"/></svg>${n}</span>`;
 const watermark = () => `<p class="wm">made with <span aria-hidden="true">🌸</span> by ${esc(CONF.ownerName || "Shupti")}</p>`;
 const hue = id => { let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))%360; return h; };
 /* Nudges: ready-made messages to friends in your groups. Keep in sync with NUDGE_TEXT in the notify function. */
@@ -385,7 +397,7 @@ function streakOf(id, now=new Date()){
   return n;
 }
 /* Flame badge next to a name: their current all-5 streak. */
-const bestBadge = id => miniFlame(streakFor(id));
+const bestBadge = id => miniFlame(streakFor(id), true, skinOf(id));
 /* Milestone badges for the all-5 streak. */
 const MILESTONES = [
   {n:7,   e:"🌱", t:"One week",  bn:"এক সপ্তাহ"},
@@ -466,7 +478,7 @@ function grade(pct){
 /* ---------- Supabase data layer ---------- */
 function rowToMember(r, prev){
   return {createdAt:r.created_at, name:r.name, city:r.city, lat:r.lat, lng:r.lng, tz:r.tz, place:r.place, method:r.method, madhab:r.madhab, showExtras:r.show_extras, isPublic:r.is_public !== false,
-    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, notifyRecap:r.notify_recap !== false, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
+    notifyStart:r.notify_start, notifyEnd:r.notify_end, notifyJumuah:!!r.notify_jumuah, notifyRecap:r.notify_recap !== false, flame:r.flame || null, quietStart:r.quiet_start, quietEnd:r.quiet_end, lang:r.lang, joined:r.joined, days: prev?.days || {}};
 }
 function applyLog(r){
   if (r.updated_at && (!S.lastSync || r.updated_at > S.lastSync)) S.lastSync = r.updated_at;
@@ -707,7 +719,7 @@ function streakCard(){
     return `<div class="wd ${s} ${i===6?"today":""}" title="${fmtDay(d)}${s==="ex"?" · excused (only you see this)":""}"><i>${s==="done"?`<svg viewBox="0 0 64 76"><use href="#flm" fill="url(#gF)"/></svg>`:s==="ex"?"⏸":""}</i>${wd}</div>`;
   }).join("");
   return `<section class="streak" aria-label="Your streak">
-    <div class="flame ${lit?"lit":"dim"}">${flameSvg(lit || n>0)}<span class="n num">${n}</span>${risk?`<span class="hg" title="Streak ends soon">⌛</span>`:""}</div>
+    <div class="flame ${lit?"lit":"dim"}">${flameSvg(lit || n>0, skinOf(S.myId))}<span class="n num">${n}</span>${risk?`<span class="hg" title="Streak ends soon">⌛</span>`:""}</div>
     <div><h3>${head}</h3><p class="msg ${risk?"risk":""}" style="margin:2px 0 0">${msg}</p>${visPill()}</div>
     <div class="week">${week}</div>${tallyRow()}</section>`;
 }
@@ -829,7 +841,7 @@ function viewToday(){
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
-  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + groupsNudge() + alertsNudge() + friendsStrip();
+  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + gameCard() + groupsNudge() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
@@ -1019,7 +1031,48 @@ function viewMe(){
   const s7 = memberSummary(S.myId,"7"), sm = memberSummary(S.myId,"month"), best = bestStreak(S.myId);
   return streakCard() + `<div class="panel"><div class="brand">${avatar(S.myId,m.name)}<div><h3>${esc(m.name)}</h3><p class="note">${esc(loc(cfgOf(m)).name)} · ${cfgOf(m).madhab==="hanafi"?"Hanafi Asr":"Standard Asr"}</p></div><span class="grade" style="margin-left:auto">${grade(sm.pct)}</span></div>
     <div class="tiles num"><div class="tile"><b>${s7.pct==null?"–":Math.round(s7.pct)+"%"}</b><span>Fardh, 7 days</span></div><div class="tile"><b>${best}</b><span>Best streak</span></div><div class="tile"><b>${sm.pts}</b><span>Points this month</span></div></div>
-    ${gradesheet(S.myId)}</div>` + weekCard() + badgeShelf(best) + qazaPanel();
+    ${gradesheet(S.myId)}</div>` + weekCard() + flamePicker(best) + badgeShelf(best) + qazaPanel();
+}
+
+/* ---------- Star Catch: unlocked once a day after all 5 fardh ---------- */
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
+function gameCard(){
+  const m = meDoc(); if (!m || S.dayOff) return "";
+  const today = appDay(cfgOf(m));
+  if (dayState(S.myId, today).s !== "done") return "";
+  if (lsGet("nb-game-day") === today) return `<div class="notice gamedone"><span>⭐ Star Catch: you scored <b class="num">${lsGet("nb-game-score") || 0}</b> today. A new round unlocks tomorrow 🌙</span></div>`;
+  return `<div class="notice gameon"><span>🎮 <b>All 5 prayed, MashaAllah!</b> Today's treat is unlocked: one round of Star Catch.</span><button class="primary" data-act="play">⭐ Play</button></div>`;
+}
+async function playGame(){
+  const today = appDay(cfgOf(meDoc()));
+  if (lsGet("nb-game-day") === today) return;
+  if (!window.NB_GAME){
+    await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "game.js?v=" + (document.querySelector('script[src^="app.js"]')?.src.split("v=")[1] || "1"); sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }).catch(() => toast("Couldn't open the game. Check your connection."));
+    if (!window.NB_GAME) return;
+  }
+  window.NB_GAME.start({bn: LANG==="bn", best: +lsGet("nb-game-best") || 0, onEnd: score => {
+    lsSet("nb-game-day", today); lsSet("nb-game-score", String(score));
+    if (score > (+lsGet("nb-game-best") || 0)) lsSet("nb-game-best", String(score));
+    render();
+  }});
+}
+
+/* ---------- flame looks ---------- */
+function flamePicker(best){
+  const cur = skinOf(S.myId);
+  return `<section class="panel skins"><div class="sechead"><h3>🔥 Your flame</h3><p>Friends see it too</p></div>
+    <div class="skingrid">${SKINS.map(sk => { const open = best >= sk.need, on = sk.k===cur;
+      return `<button class="skin ${on?"on":""} ${open?"":"locked"}" data-act="skin" data-k="${sk.k}" ${open?"":"disabled"} aria-pressed="${on}">
+        <span class="sf">${flameSvg(true, sk.k)}</span><b>${sk.n}</b><small>${on ? "Wearing ✓" : open ? "Tap to wear" : `🔒 ${sk.need}-day streak`}</small></button>`; }).join("")}</div>
+    <p class="note">Unlock new looks by keeping a long streak. Your best so far: <b class="num">${best}</b> days.</p></section>`;
+}
+async function setSkin(k){
+  try { localStorage.setItem("nb-flame", k); } catch {}
+  if (meDoc()) meDoc().flame = k;
+  render();
+  const {error} = await S.sb.from("members").update({flame:k}).eq("id", S.myId);
+  if (error && !/flame/.test(error.message||"")) toast("Couldn't save that. Try again.");
 }
 
 /* ---------- weekly recap ---------- */
@@ -1480,6 +1533,8 @@ document.addEventListener("click", async e => {
     if (isCodeEmail(S.email) && !b.dataset.sure){ leaveDialog(); return; }
     await S.sb.auth.signOut(); location.reload();
   }
+  else if (a==="play"){ b.disabled = true; await playGame(); b.disabled = false; }
+  else if (a==="skin"){ await setSkin(b.dataset.k); toast("New look on 🔥"); }
   else if (a==="recap"){ b.disabled = true; await openRecap(); b.disabled = false; }
   else if (a==="recapclose"){ $("recapDlg")?.remove(); }
   else if (a==="recapshare"){
@@ -1689,8 +1744,14 @@ document.addEventListener("click", async e => {
     if (c==="f" && before!=="done" && dayState(S.myId,ds,now).s==="done"){
       const n = streakOf(S.myId,now); celebrate();
       const ms = MILESTONES.find(x => x.n === n && n > sBefore);
+      const sk = SKINS.find(x => x.need && x.need === n && n > sBefore);
+      let seen = ""; try { seen = localStorage.getItem("nb-skins-seen") || ""; } catch {}
+      if (sk && !seen.split(",").includes(sk.k)){
+        try { localStorage.setItem("nb-skins-seen", seen ? seen+","+sk.k : sk.k); } catch {}
+        setTimeout(() => toast(`🔥 New flame unlocked: ${sk.n}. Wear it from the Me tab!`), ms ? 4500 : 2500);
+      }
       if (ms){ setTimeout(celebrate, 700); showMilestone(ms); }
-      else toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done.` : "All 5 fardh done for the day.");
+      else toast(n > sBefore ? `🔥 ${n}-day streak! All 5 fardh done. Star Catch unlocked 🎮` : "All 5 fardh done for the day. Star Catch unlocked 🎮");
     }
   }
 });
