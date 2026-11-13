@@ -557,3 +557,4 @@ html[lang="bn"] .bn{display:none}
 .atile.locked span{font-size:14px}
 .cardview{padding:14px}
 .cardview .rcard{margin-bottom:12px}
+.notice.teaser{background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 16%,var(--surface)),var(--surface));border:1.5px dashed color-mix(in srgb,var(--gold) 55%,transparent);font-size:14px}

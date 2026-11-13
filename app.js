@@ -1080,8 +1080,12 @@ const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch { retur
 const lsSet = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
 function gameCard(){
   const m = meDoc(); if (!m || S.dayOff) return "";
-  const today = appDay(cfgOf(m));
-  if (dayState(S.myId, today).s !== "done") return "";
+  const today = appDay(cfgOf(m)), st = dayState(S.myId, today).s;
+  if (st === "ex") return "";
+  if (st !== "done"){
+    const n = P.filter(p => codeOf(S.myId,today,p.k).includes("f")).length;
+    return `<div class="notice teaser"><span>🎁 <b>${5-n} more fardh today</b> to unlock today's card and a round of Star Catch ⭐</span></div>`;
+  }
   if (lsGet("nb-game-day") === today) return `<div class="notice gamedone"><span>⭐ Star Catch: you scored <b class="num">${lsGet("nb-game-score") || 0}</b> today. A new round unlocks tomorrow 🌙</span></div>`;
   return `<div class="notice gameon"><span>🎮 <b>All 5 prayed, MashaAllah!</b> Today's treat is unlocked: one round of Star Catch.</span><button class="primary" data-act="play">⭐ Play</button></div>`;
 }
@@ -1510,6 +1514,8 @@ function tourSteps(){
      p:"After you pray, tap the pink <b>Fardh</b> button. Tap Sunnah, Nafl or Witr too if you prayed them. You have <b>24 hours</b> to log each namaz, so a forgotten tap is fine."},
     {art:`<div class="tart"><span class="tflame">${flameSvg(true)}</span></div>`, h:"Keep your streaks",
      p:"🔥 grows each day you pray <b>all 5</b> fardh. Below it, <b>6/7</b> means 6 of the 7 fardh since you joined, so every single fardh counts. Travelling, ill or can't pray? Tap <b>Excuse this day</b>: your streak pauses, and <b>only you</b> can see it."},
+    {art:`<div class="tart">${["🎁","⭐","🔥"].map(e=>`<span class="temo">${e}</span>`).join("")}</div>`, h:"Little treats",
+     p:"Pray <b>all 5 fardh</b> in a day and you unlock that day's <b>card</b> (a short ayah or hadith for your collection) and <b>one round of Star Catch</b>, a tiny game. Long streaks also unlock new <b>flame looks</b> 🔥"},
     {art:`<div class="tart">${["🌍","👥","🔒"].map(e=>`<span class="temo">${e}</span>`).join("")}</div>`, h:"Friends & groups",
      p:"<b>🌍 Public</b> puts your streak, grade and today's fardh on the Everyone board; <b>🔒 Private</b> hides you there. <b>Groups</b> share your 🔥 streak and today's fardh rings with just the people you choose, and you can nudge each other there. Invite friends from the Board tab."}
   ];
