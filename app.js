@@ -791,7 +791,8 @@ function sticker(n){
 /* Home: an easy way in for people who aren't in a group yet. */
 function groupsNudge(){
   if (!meDoc() || S.groups.length) return "";
-  return `<div class="notice gnudge"><span>👥 <b>Not in a group yet?</b> Join your friends' group with their code.</span><button class="primary" data-act="tab" data-tab="board" data-then="gjoin">🔑 Join a group</button></div>`;
+  return `<div class="notice gnudge"><span>👥 <b>Not in a group yet?</b> Join a friend's group with their code, or start your own and invite them.</span>
+    <div class="btns"><button class="primary" data-act="tab" data-tab="board" data-then="gjoin">🔑 Join a group</button><button class="ghost" data-act="tab" data-tab="board" data-then="gnew">＋ Create one</button></div></div>`;
 }
 /* Home: you + public members. A group's rings show inside that group on the Board. */
 function friendsStrip(){
