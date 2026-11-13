@@ -1151,7 +1151,7 @@ function viewSettings(){
   const m = meDoc() || {}, cfg = cfgOf(m), isNew = !meDoc();
   const guessName = S.myRequest?.name || S.session?.user?.user_metadata?.given_name || (S.session?.user?.user_metadata?.full_name||"").split(" ")[0] || "";
   const reqTop = S.admin && S.requests.length ? adminPanel().split('<section class="panel" id="manage">')[0] : "";
-  return reqTop + `<form class="panel" id="setupForm"><h3>${isNew?"Join the board 🌸":"Your settings"}</h3>
+  return reqTop + (isNew ? inviteBanner() : "") + `<form class="panel" id="setupForm"><h3>${isNew?"Join the board 🌸":"Your settings"}</h3>
     <p>Namaz times are worked out for your own city, so each person can be somewhere different.</p>
     <label class="f">Name on the board<input id="f-name" maxlength="24" required value="${esc(m.name||guessName)}" placeholder="e.g. Shupti"></label>
     <div class="grid2">
@@ -1357,6 +1357,7 @@ function viewLogin(){
 const inviteText = (name, link) => `🌸 You're invited to join "${name}" on Namaz Board!\nLet's keep our namaz together 🤲\n\nTap to join: ${link}`;
 function inviteBanner(){
   const pv = S.linkGroup; if (!pv?.name) return "";
+  if (S.phase === "uninvited" || S.phase === "join") return `<div class="notice"><span>💌 After you're in, you'll be added to <b data-notr>${esc(pv.name)}</b> automatically.</span></div>`;
   return `<section class="panel invitehero"><div class="ih-emoji">💌</div><h3>You're invited to<br><span data-notr>${esc(pv.name)}</span></h3>
     <p>${pv.members ? `${pv.members} friend${pv.members===1?"":"s"} already keeping their namaz here. ` : ""}Sign in below and ask to join, then you'll join the group.</p></section>`;
 }
@@ -1753,7 +1754,7 @@ document.addEventListener("submit", async e => {
       await loadAll(); S.members[S.myId] ||= rowToMember(data); subscribeLive(); checkPush();
       S.phase = "app"; celebrate(); pushMyStats(); setTimeout(maybeTour, 1200);
       let code = null; try { code = localStorage.getItem("nb-join"); } catch {}
-      if (code) setTimeout(() => openJoin(code), 600);
+      if (code) setTimeout(() => joinWithCode(code), 600);   // they came from a group invite: add them right away
     }
     S.geo = null; cache.clear(); S.view = "today"; S.dayOff = 0; render(); toast("Saved");
   } catch(err){

@@ -493,3 +493,6 @@ html[lang="bn"] .bn{display:none}
 .invitehero .ih-emoji{font-size:44px;line-height:1;margin-bottom:6px}
 .invitehero h3{font-size:22px;line-height:1.25}
 .invitehero h3 span{color:var(--rose);font-size:28px}
+.pr .qzrow{grid-column:1/-1}
+.qzrow small{flex:1 1 180px}
+.chip.qz.on::before{content:none}

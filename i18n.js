@@ -146,6 +146,8 @@ const DICT = {
 };
 
 const RULES = [
+  [/^After you're in, you'll be added to$/, () => "ভেতরে ঢোকার পর আপনাকে স্বয়ংক্রিয়ভাবে যোগ করা হবে:"],
+  [/^automatically\.$/, () => "গ্রুপে।"],
   [/^(?:(\d+) friends? already keeping their namaz here\. )?Sign in below and ask to join, then you'll join the group\.$/, (_,n) => `${n ? n+" জন বন্ধু এখানে নামাজের হিসাব রাখছে। " : ""}নিচে সাইন ইন করে যোগ দেওয়ার অনুরোধ পাঠান, তারপর গ্রুপে যোগ দেবেন।`],
   [/^Invite to$/, () => "আমন্ত্রণ:"],
   [/^(\d+) missed since you joined$/, (_,n) => `যোগ দেওয়ার পর ${n}টি বাদ`],
