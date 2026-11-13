@@ -1388,7 +1388,7 @@ function viewAlerts(){
     <section class="panel"><h3>What to send me</h3>
       <label class="tog"><input type="checkbox" id="n-start" data-act="ntoggle" ${m.notifyStart!==false?"checked":""}><span><b>When each waqt starts</b><br><small>“🌸 It's Asr time · ends 5:14 pm”</small></span></label>
       <label class="tog"><input type="checkbox" id="n-end" data-act="ntoggle" ${m.notifyEnd!==false?"checked":""}><span><b>Streak saver</b><br><small>30 min before a waqt ends, only if you haven't logged its fardh</small></span></label>
-      <label class="tog"><input type="checkbox" id="n-ayah" data-act="ntoggle" ${m.notifyAyah?"checked":""}><span><b>Ayah of the day</b><br><small>A short ayah with its meaning, 20 minutes after Fajr</small></span></label>
+      <label class="tog"><input type="checkbox" id="n-ayah" data-act="ntoggle" ${m.notifyAyah?"checked":""}><span><b>Ayah of the day</b><br><small>A short ayah with its meaning, 20 minutes after Maghrib</small></span></label>
       <label class="tog"><input type="checkbox" id="n-recap" data-act="ntoggle" ${m.notifyRecap!==false?"checked":""}><span><b>Weekly recap</b><br><small>Sunday at 8 pm: your week's fardh and streak, with a card you can save</small></span></label>
       <label class="tog"><input type="checkbox" id="n-jumuah" data-act="ntoggle" ${m.notifyJumuah?"checked":""}><span><b>Jumu'ah reminder</b><br><small>On Fridays, 1 hour before Dhuhr, with a nudge to read Surah Al-Kahf</small></span></label>
       <p class="note">Alerts use your city and times from Settings. Most phones also show them on a smartwatch.</p></section>

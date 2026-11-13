@@ -286,7 +286,7 @@ export function times(cfg: ReturnType<typeof cfgOf>, ds: string): Times {
 }
 
 /** Which notifications are due right now for this member (pure; tested). */
-/* Ayah of the day (opt-in): 20 minutes after Fajr. Keep in sync with the ayah cards in cards.js. */
+/* Ayah of the day (opt-in): 20 minutes after Maghrib. Keep in sync with the ayah cards in cards.js. */
 export const AYAT: [string, string][] = [
   ["Indeed, prayer keeps one away from immorality and wrongdoing.", "Qur'an 29:45 (Al-'Ankabut)"],
   ["So remember Me; I will remember you.", "Qur'an 2:152 (Al-Baqarah)"],
@@ -311,7 +311,7 @@ export const AYAT: [string, string][] = [
 ];
 export function ayahDue(m: Member, now: Date) {
   if (!m.notify_ayah) return null;
-  const cfg = cfgOf(m), day = appDay(cfg, now), at = new Date(+times(cfg, day).fajr + 20 * 60e3);
+  const cfg = cfgOf(m), day = appDay(cfg, now), at = new Date(+times(cfg, day).maghrib + 20 * 60e3);
   return now >= at && +now - +at < WINDOW_MS ? day : null;
 }
 export function ayahOfDay(day: string) {
@@ -647,7 +647,7 @@ Deno.serve(async (req) => {
   for (const m of (members ?? []) as Member[]) {
     const day = ayahDue(m, now); if (!day || inQuiet(m, now)) continue;
     const { data: claimed, error } = await db.from("notify_sent")
-      .upsert({ user_id: m.id, day, waqt: "fajr", kind: "ayah" }, { onConflict: "user_id,day,waqt,kind", ignoreDuplicates: true }).select();
+      .upsert({ user_id: m.id, day, waqt: "maghrib", kind: "ayah" }, { onConflict: "user_id,day,waqt,kind", ignoreDuplicates: true }).select();
     if (error || !claimed?.length) continue;
     const [text, ref] = ayahOfDay(day);
     sent += await send(m.id, m.lang === "bn" ? "📖 আজকের আয়াত" : "📖 Ayah of the day", `“${text}” (${ref})`, "ayah-" + day);
