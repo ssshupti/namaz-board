@@ -788,6 +788,13 @@ function sticker(n){
   if (n.kind[0]==="h") celebrate();
 }
 
+/* Home: an easy way in for people who aren't in a group yet. */
+function groupsNudge(){
+  if (!meDoc() || S.groups.length) return "";
+  return `<section class="panel gnudge"><div class="gn-emoji">👥</div><div><h3>Pray with your friends</h3>
+    <p>Got an invite link or a group code from a friend? Join their group to see each other's rings and streaks.</p>
+    <div class="btns"><button class="primary" data-act="tab" data-tab="board" data-then="gjoin">🔑 Join with a code</button><button class="ghost" data-act="tab" data-tab="board" data-then="gnew">＋ Start a group</button></div></div></section>`;
+}
 /* Home: you + public members. A group's rings show inside that group on the Board. */
 function friendsStrip(){
   const ids = [...new Set([S.myId, ...pubIds()])].filter(id => S.members[id]);
@@ -823,7 +830,7 @@ function viewToday(){
   const today = appDay(cfg,now), ds = addDays(today,-S.dayOff), t = times(cfg,ds);
   const isFri = new Date(ds+"T12:00:00Z").getUTCDay() === 5;
   const canLog = !!m && !S.readOnly;
-  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + alertsNudge() + friendsStrip();
+  let html = tzBanner() + requestsNudge() + installNudge() + streakCard() + groupsNudge() + alertsNudge() + friendsStrip();
   html += `<div class="sechead"><h3>${S.dayOff ? "Yesterday's namaz" : "Today's namaz"}</h3>
     <div class="seg"><button data-act="day" data-d="0" aria-pressed="${!S.dayOff}">Today</button><button data-act="day" data-d="1" aria-pressed="${!!S.dayOff}">Yesterday</button></div></div>${excusedRow(ds)}<div class="list">`;
   for (const p of P){
@@ -862,7 +869,7 @@ function excusedRow(ds){
 function viewBoard(){
   const g = curGroup();
   const chips = `<div class="gchips"><button class="gchip" data-act="gpick" data-id="all" aria-pressed="${S.gid==="all"}">🌍 Everyone</button>${S.groups.map(x => `<button class="gchip" data-act="gpick" data-id="${x.id}" aria-pressed="${g&&x.id===g.id}">${esc(x.name)}</button>`).join("")}
-    <button class="gchip add" data-act="gnew">＋ New group</button><button class="gchip add" data-act="gjoin">＋ Join a group</button></div>`;
+    <button class="gchip add join" data-act="gjoin">🔑 Join a group</button><button class="gchip add" data-act="gnew">＋ New group</button></div>`;
   if (S.gform) return chips + groupForm();
   if (S.gid==="all") return chips + everyoneBoard();
   if (!g) return chips + `<div class="panel empty"><h3>Your namaz is private 🔒</h3><p>Nobody can see your log until you're in a group. Create one and share its link, or join a friend's group with their code.</p>
@@ -1453,7 +1460,7 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act],[data-tab]"); if (!b || b.disabled) return;
   const a = b.dataset.act;
   if (a==="ntoggle") return; // handled on change
-  if (!a || a==="tab"){ S.view = b.dataset.tab; render(); scrollTo({top:0}); return; }
+  if (!a || a==="tab"){ S.view = b.dataset.tab; if (b.dataset.then){ S.gform = b.dataset.then==="gjoin" ? "join" : "new"; S.joinCode = ""; S.preview = null; } render(); scrollTo({top:0}); return; }
   if (a==="google"){
     const {error} = await S.sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin + location.pathname, queryParams:{prompt:"select_account"}}});
     if (error) toast("Google sign-in isn't set up yet: " + error.message);
