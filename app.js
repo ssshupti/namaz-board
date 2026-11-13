@@ -1377,7 +1377,7 @@ function inviteBanner(){
   const pv = S.linkGroup; if (!pv?.name) return "";
   if (S.phase === "uninvited" || S.phase === "join") return `<div class="notice"><span>💌 After you're in, you'll be added to <b data-notr>${esc(pv.name)}</b> automatically.</span></div>`;
   return `<section class="panel invitehero"><div class="ih-emoji">💌</div><h3>You're invited to<br><span data-notr>${esc(pv.name)}</span></h3>
-    <p>${pv.members ? `${pv.members} friend${pv.members===1?"":"s"} already keeping their namaz here. ` : ""}Sign in below and ask to join, then you'll join the group.</p></section>`;
+    <p>Sign in below and ask to join, then you'll join the group.</p></section>`;
 }
 function viewNotInvited(){
   const owner = esc(CONF.ownerName||"the board owner");
