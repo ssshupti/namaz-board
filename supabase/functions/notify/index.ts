@@ -420,6 +420,7 @@ export function computeStats(m: StatMember, code: (day: string, waqt: string) =>
   // On the joining day, prayers that began before the person joined only count if logged.
   const preJoin = (d: string, start: Date) => !!(m.joined === d && m.created_at && start < new Date(m.created_at));
   const state = (d: string) => {
+    if (allF(d)) return "done";   // all 5 logged always counts
     if (m.joined && d < m.joined) return "na";
     if (isEx(d) && !allF(d)) return "ex";
     const t = times(cfg, d);

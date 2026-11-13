@@ -372,7 +372,9 @@ function codeOf(id, ds, k){
   return S.members[id]?.days?.[ds]?.[k] || "";
 }
 function dayState(id, ds, now=new Date()){
-  const m = S.members[id]; if (!m || (m.joined && ds < m.joined)) return {s:"na"};
+  const m = S.members[id]; if (!m) return {s:"na"};
+  if (P.every(p => codeOf(id,ds,p.k).includes("f"))) return {s:"done", open:[]};   // all 5 logged always counts
+  if (m.joined && ds < m.joined) return {s:"na"};
   if (id===S.myId && S.excused.has(ds) && !P.every(p => codeOf(id,ds,p.k).includes("f"))) return {s:"ex", open:[]};
   const cfg = cfgOf(m), t = times(cfg,ds); const open = [];
   for (const p of P){
@@ -1043,7 +1045,7 @@ function cardOrder(){   // a fixed shuffle per person, so friends collect in dif
 function fullDays(){
   const m = meDoc(); if (!m?.joined) return [];
   const today = appDay(cfgOf(m)), out = [];
-  for (let d = m.joined, i = 0; d <= today && i < 4000; d = addDays(d,1), i++) if (P.every(p => codeOf(S.myId,d,p.k).includes("f"))) out.push(d);
+  for (let d = m.joined < today ? m.joined : today, i = 0; d <= today && i < 4000; d = addDays(d,1), i++) if (P.every(p => codeOf(S.myId,d,p.k).includes("f"))) out.push(d);
   return out;
 }
 function cardHtml(c, big){
@@ -1084,6 +1086,7 @@ function gameCard(){
   if (st === "ex") return "";
   if (st !== "done"){
     const n = P.filter(p => codeOf(S.myId,today,p.k).includes("f")).length;
+    if (n >= 5) return "";
     return `<div class="notice teaser"><span>🎁 <b>${5-n} more fardh today</b> to unlock today's card and a round of Star Catch ⭐</span></div>`;
   }
   if (lsGet("nb-game-day") === today) return `<div class="notice gamedone"><span>⭐ Star Catch: you scored <b class="num">${lsGet("nb-game-score") || 0}</b> today. A new round unlocks tomorrow 🌙</span></div>`;
@@ -1876,8 +1879,12 @@ document.addEventListener("submit", async e => {
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
   try {
     if (meDoc()){
+      // Moving to a city that's behind in time can make "today" earlier than the joining day: move the joining day back.
+      { const d = appDay(cfgOf(prof)); if (meDoc().joined && d < meDoc().joined) prof.joined = d; }
       const {error} = await S.sb.from("members").update(prof).eq("id", S.myId); if (error) throw error;
-      Object.assign(meDoc(), rowToMember({...prof, notify_start:meDoc().notifyStart, notify_end:meDoc().notifyEnd, joined:meDoc().joined}, meDoc()));
+      // Update only what this form changed, so other settings (alerts, flame look…) stay as they are.
+      Object.assign(meDoc(), {name:prof.name, city:prof.city, method:prof.method, madhab:prof.madhab, showExtras:prof.show_extras, isPublic:prof.is_public !== false,
+        lat:prof.lat ?? null, lng:prof.lng ?? null, tz:prof.tz ?? null, place:prof.place ?? null, joined:prof.joined || meDoc().joined});
     } else {
       const joined = appDay(cfgOf(prof));
       const {data, error} = await S.sb.from("members").insert({id:S.myId, ...prof, joined}).select().single(); if (error) throw error;
