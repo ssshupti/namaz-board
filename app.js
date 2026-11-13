@@ -957,7 +957,7 @@ function groupDirectory(){
   if (S.directory === undefined){ S.directory = null; loadDirectory(); }
   const list = S.directory; if (!list?.length) return "";
   return `<section class="panel gdir"><h3>Groups on Namaz Board</h3>
-    <div class="gdlist">${list.map(g => `<div class="gdrow"><b data-notr>${esc(g.name)}</b><small>${g.members} member${g.members===1?"":"s"}</small>${g.mine ? `<span class="tag ok">You're in</span>` : `<span class="tag">Needs code</span>`}</div>`).join("")}</div>
+    <div class="gdlist">${list.map(g => `<div class="gdrow"><b data-notr>${esc(g.name)}</b><small></small>${g.mine ? `<span class="tag ok">You're in</span>` : `<span class="tag">Needs code</span>`}</div>`).join("")}</div>
     <p class="note">Want to join one? Ask someone in it for the invite link or 6-letter code.</p></section>`;
 }
 function groupForm(){
